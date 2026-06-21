@@ -66,8 +66,13 @@ create policy "jobs update"      on public.jobs for update using (auth.uid() = a
 create policy "jobs delete"      on public.jobs for delete using (auth.uid() = agent_id);
 
 -- ---------- Convenience view: jobs joined with verified employer flag ----------
-create or replace view public.jobs_public as
+-- security_invoker = on → the view respects the caller's RLS (so it only ever
+-- returns published jobs to the public, matching the policy above).
+create or replace view public.jobs_public with (security_invoker = on) as
   select j.*, p.verified as employer_verified, p.company as employer_company, p.website as employer_website
   from public.jobs j
   left join public.agent_profiles p on p.id = j.agent_id
   where j.status = 'published';
+
+-- Make sure the browser (anon) and signed-in recruiters can read the view.
+grant select on public.jobs_public to anon, authenticated;
