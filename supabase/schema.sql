@@ -1,0 +1,73 @@
+-- =========================================================
+-- The Career Architect — database schema
+-- Run this in the Supabase SQL editor (Dashboard → SQL → New query).
+-- Safe to re-run: uses "if not exists" / "drop policy if exists".
+-- =========================================================
+
+-- ---------- Agent (recruiter) profiles ----------
+create table if not exists public.agent_profiles (
+  id          uuid primary key references auth.users(id) on delete cascade,
+  full_name   text,
+  company     text,
+  email       text,
+  website     text,
+  about       text,
+  verified    boolean not null default false,  -- flipped true by an admin once vetted
+  created_at  timestamptz not null default now()
+);
+
+-- ---------- Job listings ----------
+create table if not exists public.jobs (
+  id              uuid primary key default gen_random_uuid(),
+  agent_id        uuid not null references auth.users(id) on delete cascade,
+  title           text not null,
+  company         text not null,
+  location        text,
+  work_mode       text,            -- Remote | Hybrid | On-site
+  employment_type text,            -- Full-time | Contract | Part-time | Internship
+  category        text,            -- Engineering | Data | Design | Marketing | ...
+  experience      text,            -- Entry | Mid | Senior | Lead
+  salary_min      integer,
+  salary_max      integer,
+  salary_currency text default 'USD',
+  visa_sponsorship boolean default false,
+  description     text not null,
+  apply_url       text,
+  status          text not null default 'published',  -- published | draft | closed
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists jobs_status_created_idx on public.jobs (status, created_at desc);
+create index if not exists jobs_agent_idx on public.jobs (agent_id);
+
+-- ---------- Row Level Security ----------
+alter table public.agent_profiles enable row level security;
+alter table public.jobs           enable row level security;
+
+-- Profiles: anyone can read (so the job board can show employer name/verified),
+-- but you can only create/edit YOUR OWN profile row.
+drop policy if exists "profiles read"   on public.agent_profiles;
+drop policy if exists "profiles insert" on public.agent_profiles;
+drop policy if exists "profiles update" on public.agent_profiles;
+create policy "profiles read"   on public.agent_profiles for select using (true);
+create policy "profiles insert" on public.agent_profiles for insert with check (auth.uid() = id);
+create policy "profiles update" on public.agent_profiles for update using (auth.uid() = id);
+
+-- Jobs: anyone can read PUBLISHED jobs; agents manage only their own.
+drop policy if exists "jobs public read"  on public.jobs;
+drop policy if exists "jobs owner read"   on public.jobs;
+drop policy if exists "jobs insert"       on public.jobs;
+drop policy if exists "jobs update"       on public.jobs;
+drop policy if exists "jobs delete"       on public.jobs;
+create policy "jobs public read" on public.jobs for select using (status = 'published');
+create policy "jobs owner read"  on public.jobs for select using (auth.uid() = agent_id);
+create policy "jobs insert"      on public.jobs for insert with check (auth.uid() = agent_id);
+create policy "jobs update"      on public.jobs for update using (auth.uid() = agent_id);
+create policy "jobs delete"      on public.jobs for delete using (auth.uid() = agent_id);
+
+-- ---------- Convenience view: jobs joined with verified employer flag ----------
+create or replace view public.jobs_public as
+  select j.*, p.verified as employer_verified, p.company as employer_company, p.website as employer_website
+  from public.jobs j
+  left join public.agent_profiles p on p.id = j.agent_id
+  where j.status = 'published';

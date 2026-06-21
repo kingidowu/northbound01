@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Northbound — Remote IT careers in the US & Canada</title>
-<meta name="description" content="Land a remote tech role with visa sponsorship in the US or Canada. Northbound helps DevOps, cloud, data, and AI professionals find sponsoring employers and a clear plan." />
+<title>The Career Architect — Career strategy, resumes & job search</title>
+<meta name="description" content="The Career Architect helps you design the career you want: a tailored strategy, resume & ATS help, targeted job search, and verified job listings." />
 <meta name="theme-color" content="#0E1733" />
 <!-- Open Graph / social share -->
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Northbound — Remote IT careers with visa sponsorship" />
-<meta property="og:description" content="Turn scattered job-hunting into a clear plan: the right roles, the right recruiters, and a sponsorship path that actually works — US & Canada." />
-<meta property="og:site_name" content="Northbound" />
+<meta property="og:title" content="The Career Architect — design your career, don't leave it to luck" />
+<meta property="og:description" content="A tailored plan, resume & ATS help, targeted job search, and verified listings — for any field and any stage." />
+<meta property="og:site_name" content="The Career Architect" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Northbound — Remote IT careers with visa sponsorship" />
-<meta name="twitter:description" content="Remote DevOps, cloud, data & AI roles with visa sponsorship in the US & Canada." />
+<meta name="twitter:title" content="The Career Architect" />
+<meta name="twitter:description" content="Career strategy, resume & ATS help, targeted job search, and verified job listings." />
 <!-- Favicon: brand emerald dot on deep indigo, inline so there's no asset to host -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230E1733'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%2327C285'/%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%230E1733'/%3E%3Crect x='9' y='22' width='4.5' height='9' rx='1.6' fill='%2327C285'/%3E%3Crect x='17.75' y='17' width='4.5' height='14' rx='1.6' fill='%2327C285'/%3E%3Crect x='26.5' y='11' width='4.5' height='20' rx='1.6' fill='%2327C285'/%3E%3Ccircle cx='28.75' cy='8' r='2.4' fill='%23D99A28'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
@@ -23,7 +23,7 @@
   /* =========================================================
      CONFIG — edit these
      ========================================================= */
-  /* Brand name appears in nav, hero, footer. Swap "Northbound". */
+  /* Brand name appears in nav, hero, footer via the BRAND constant below. */
 
   :root{
     --ink:#0E1733;          /* deep indigo */
@@ -68,6 +68,7 @@
   .nav-in{display:flex;align-items:center;justify-content:space-between;height:68px}
   .brand{font-family:"Space Grotesk";font-weight:700;font-size:1.18rem;letter-spacing:-.01em;display:flex;align-items:center;gap:.5rem}
   .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--emerald-bright);box-shadow:0 0 0 4px rgba(39,194,133,.18)}
+  .brand-mark{width:26px;height:26px;display:block;flex:0 0 auto}
   .nav-links{display:flex;align-items:center;gap:2rem;font-size:.92rem;color:var(--slate);font-weight:500}
   .nav-links a:not(.btn):hover{color:var(--ink)}
   .nav-cta{display:none}                 /* CTA inside the menu shows on mobile only */
@@ -267,15 +268,18 @@
 <!-- NAV -->
 <nav class="nav">
   <div class="wrap nav-in">
-    <a class="brand" href="#top"><span class="dot"></span><span data-brand>Northbound</span></a>
+    <a class="brand" href="#top">
+      <svg class="brand-mark" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#0E1733"/><rect x="9" y="22" width="4.5" height="9" rx="1.6" fill="#27C285"/><rect x="17.75" y="17" width="4.5" height="14" rx="1.6" fill="#27C285"/><rect x="26.5" y="11" width="4.5" height="20" rx="1.6" fill="#27C285"/><circle cx="28.75" cy="8" r="2.4" fill="#D99A28"/></svg>
+      <span data-brand>The Career Architect</span>
+    </a>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navLinks">
       <span></span><span></span><span></span>
     </button>
     <div class="nav-links" id="navLinks">
-      <a href="#focus">What we do</a>
-      <a href="#visa">Visa support</a>
       <a href="#how">How it works</a>
+      <a href="jobs.html">Jobs</a>
       <a href="#faq">FAQ</a>
+      <a href="agent.html">For recruiters</a>
       <a class="btn btn-accent nav-cta" href="#assessment">Start your assessment</a>
     </div>
   </div>
@@ -285,23 +289,23 @@
 <header class="hero" id="top">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow">Remote IT careers · US &amp; Canada</span>
-      <h1>Land a remote tech role — <em>with visa sponsorship</em> — in the US or Canada.</h1>
-      <p class="hero-sub">We help DevOps, cloud, data, and AI professionals turn scattered job-hunting into a clear plan: the right roles, the right recruiters, and a sponsorship path that actually works.</p>
+      <span class="eyebrow">Career strategy · Resumes · Job search</span>
+      <h1>Build the career you want — <em>by design</em>, not by luck.</h1>
+      <p class="hero-sub">The Career Architect turns scattered job-hunting into a clear plan: a tailored strategy, a resume that gets past the filters, targeted roles, and verified listings from real recruiters.</p>
       <div class="hero-cta">
         <a class="btn btn-accent" href="#assessment">Start your assessment</a>
-        <a class="btn btn-ghost" href="#how">See how it works</a>
+        <a class="btn btn-ghost" href="jobs.html">Browse jobs</a>
       </div>
       <div class="hero-trust">
-        <div><b>2 countries</b>US &amp; Canada coverage</div>
-        <div><b>5 tracks</b>DevOps · Cloud · Data · Coding · AI</div>
         <div><b>1 plan</b>Built around your goals</div>
+        <div><b>ATS-ready</b>Resume &amp; profile help</div>
+        <div><b>Verified</b>Listings from vetted recruiters</div>
       </div>
     </div>
 
     <!-- signature: status / route card -->
     <div class="status-card" aria-hidden="true">
-      <span class="stamp">Sponsorship&nbsp;✓</span>
+      <span class="stamp">On&nbsp;track&nbsp;✓</span>
       <span class="eyebrow" style="color:var(--emerald-bright)">Your track</span>
       <ul class="route">
         <li class="done"><span class="node">✓</span><span><span class="lbl">Assessment</span><br><span class="meta">where you are today</span></span></li>
@@ -375,18 +379,18 @@
     <div class="proof-grid">
       <div class="quote">
         <div class="stars" aria-hidden="true">★★★★★</div>
-        <p>"They actually understood the sponsorship side. Instead of mass-applying, I had a short list of employers who sponsor — and a plan for how to bring it up."</p>
-        <div class="who">— Cloud engineer, relocating to Toronto</div>
+        <p>"Instead of mass-applying into the void, I had a focused list of roles and a plan for each one. The clarity alone was worth it."</p>
+        <div class="who">— Career changer, into product</div>
       </div>
       <div class="quote">
         <div class="stars" aria-hidden="true">★★★★★</div>
-        <p>"The positioning advice rewrote how my resume read for US roles. Interviews went from rare to regular within a few weeks."</p>
-        <div class="who">— DevOps engineer, remote (US)</div>
+        <p>"They rewrote how my resume reads. It started getting past the filters and interviews went from rare to regular within weeks."</p>
+        <div class="who">— Marketing manager</div>
       </div>
       <div class="quote">
         <div class="stars" aria-hidden="true">★★★★★</div>
-        <p>"I almost gave up on sponsorship. Northbound made it the starting point instead of the dealbreaker."</p>
-        <div class="who">— Data engineer, applying from abroad</div>
+        <p>"I was stuck and second-guessing everything. The Career Architect turned a vague goal into concrete next steps."</p>
+        <div class="who">— Software engineer, mid-career</div>
       </div>
     </div>
     <div class="proof-stats">
@@ -632,9 +636,9 @@
 <!-- FOOTER -->
 <footer>
   <div class="wrap foot-in">
-    <a class="brand" href="#top"><span class="dot"></span><span data-brand>Northbound</span></a>
-    <small>Remote IT career development · United States &amp; Canada · Visa-sponsorship focused</small>
-    <small>© <span id="yr"></span> <span data-brand>Northbound</span> Career Development</small>
+    <a class="brand" href="#top"><svg class="brand-mark" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#1C2748"/><rect x="9" y="22" width="4.5" height="9" rx="1.6" fill="#27C285"/><rect x="17.75" y="17" width="4.5" height="14" rx="1.6" fill="#27C285"/><rect x="26.5" y="11" width="4.5" height="20" rx="1.6" fill="#27C285"/><circle cx="28.75" cy="8" r="2.4" fill="#D99A28"/></svg><span data-brand>The Career Architect</span></a>
+    <small>Career strategy · Resumes &amp; ATS · Targeted job search · Verified listings</small>
+    <small>© <span id="yr"></span> <span data-brand>The Career Architect</span></small>
   </div>
 </footer>
 
@@ -642,7 +646,7 @@
 /* =========================================================
    CONFIG
    ========================================================= */
-const BRAND = "Northbound";                 // ← change your brand name here
+const BRAND = "The Career Architect";        // ← change your brand name here
 
 // --- Lead delivery (submissions go to BOTH if configured) ---
 // 1) Database — Supabase. Leave blank to skip. See README "Lead capture".
@@ -658,7 +662,7 @@ const AI_ENDPOINT = "/api/assess";
 
 /* apply brand + year */
 document.querySelectorAll("[data-brand]").forEach(el => el.textContent = BRAND);
-document.title = BRAND + " — Remote IT careers in the US & Canada";
+document.title = BRAND + " — Career strategy, resumes & job search";
 document.getElementById("yr").textContent = new Date().getFullYear();
 
 /* =========================================================

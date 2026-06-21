@@ -1,6 +1,26 @@
-# Northbound
+# The Career Architect
 
-Landing page for **Northbound** — remote IT career development with a visa-sponsorship focus, for the US & Canada.
+Career-services platform: a smart assessment, AI career snapshot, a **verified job board**, and a **recruiter portal** for posting listings. General career services — any field, any stage.
+
+| Page | What it is |
+|---|---|
+| [index.html](index.html) | Landing page + AI career assessment |
+| [jobs.html](jobs.html) | Public job board with search/filters |
+| [agent.html](agent.html) | Recruiter portal — sign up, profile, post & manage listings |
+
+## Database (Supabase) — required for jobs + recruiter portal
+
+1. Create a project at https://supabase.com.
+2. Open **SQL Editor → New query**, paste all of [supabase/schema.sql](supabase/schema.sql), and run it. This creates the `agent_profiles` and `jobs` tables, the `jobs_public` view, and Row Level Security policies.
+3. Put your project URL + **publishable** (anon) key in [config.js](config.js). The publishable key is *meant* to be public — your data is protected by the RLS policies, not by hiding the key.
+4. **Auth → Providers → Email:** for smooth testing, turn **off** "Confirm email" (Settings → Authentication) so recruiters can sign in immediately. Leave it on in production if you want email verification.
+5. To mark a recruiter **verified** (the ✓ badge on listings), flip `verified = true` on their row in the `agent_profiles` table (Supabase Table Editor).
+
+---
+
+## Original brand note
+
+Previously branded "Northbound" (remote IT + visa sponsorship). Now **The Career Architect**, general career services.
 
 A static `index.html` (no build step) with a 6-step career assessment form, plus an optional **AI instant snapshot** powered by Claude via a serverless function.
 

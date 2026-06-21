@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>For recruiters — The Career Architect</title>
+<meta name="description" content="Recruiter portal: create an account and post verified job listings to The Career Architect job board." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%230E1733'/%3E%3Crect x='9' y='22' width='4.5' height='9' rx='1.6' fill='%2327C285'/%3E%3Crect x='17.75' y='17' width='4.5' height='14' rx='1.6' fill='%2327C285'/%3E%3Crect x='26.5' y='11' width='4.5' height='20' rx='1.6' fill='%2327C285'/%3E%3Ccircle cx='28.75' cy='8' r='2.4' fill='%23D99A28'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .auth-wrap{max-width:440px;margin:2.5rem auto 0}
+  .tabs{display:flex;gap:.5rem;margin-bottom:1.3rem}
+  .tabs button{flex:1;padding:.7rem;border:1px solid var(--line);background:var(--white);border-radius:10px;font:inherit;font-weight:600;cursor:pointer;color:var(--slate)}
+  .tabs button.on{border-color:var(--emerald);color:var(--ink);background:rgba(22,137,91,.06)}
+  .dash{display:grid;gap:1.4rem;margin-top:2rem}
+  .dash-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+  .dash-head .who{font-size:.9rem;color:var(--slate)}
+  .card h2{font-size:1.25rem;margin-bottom:.3rem}
+  .card .card-sub{color:var(--slate);font-size:.9rem;margin-bottom:1.2rem}
+  .my-job{border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:1rem}
+  .my-job .t{font-family:"Space Grotesk";font-weight:600}
+  .my-job .s{font-size:.8rem;color:var(--slate);font-family:"Space Mono"}
+  .row-actions{display:flex;gap:.5rem}
+  .link-btn{background:none;border:none;color:#9B2C2C;font:inherit;cursor:pointer;font-size:.85rem;text-decoration:underline}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#0E1733"/><rect x="9" y="22" width="4.5" height="9" rx="1.6" fill="#27C285"/><rect x="17.75" y="17" width="4.5" height="14" rx="1.6" fill="#27C285"/><rect x="26.5" y="11" width="4.5" height="20" rx="1.6" fill="#27C285"/><circle cx="28.75" cy="8" r="2.4" fill="#D99A28"/></svg>
+      <span data-brand>The Career Architect</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="jobs.html">Jobs</a>
+      <a href="agent.html" class="active">For recruiters</a>
+    </div>
+  </div>
+</nav>
+
+<main class="section">
+  <div class="wrap">
+    <div class="page-head">
+      <span class="eyebrow">Recruiter portal</span>
+      <h1>Post verified roles.</h1>
+      <p>Create an account, set up your employer profile, and publish listings straight to the job board.</p>
+    </div>
+
+    <div id="notConfigured" class="notice notice-warn hidden">
+      The portal isn't connected yet. Add your Supabase keys in <code>config.js</code> and run <code>supabase/schema.sql</code>. See the README.
+    </div>
+
+    <!-- ============ LOGGED OUT: auth ============ -->
+    <section class="auth-wrap card" id="authCard">
+      <div class="tabs">
+        <button id="tabSignin" class="on" type="button">Sign in</button>
+        <button id="tabSignup" type="button">Create account</button>
+      </div>
+      <div class="field"><label>Email <span class="req">*</span></label><input type="email" id="authEmail" autocomplete="email" /></div>
+      <div class="field"><label>Password <span class="req">*</span></label><input type="password" id="authPass" autocomplete="current-password" minlength="6" placeholder="At least 6 characters" /></div>
+      <div id="authMsg" class="notice hidden"></div>
+      <button class="btn btn-accent" id="authBtn" type="button" style="width:100%">Sign in</button>
+    </section>
+
+    <!-- ============ LOGGED IN: dashboard ============ -->
+    <section class="dash hidden" id="dash">
+      <div class="dash-head">
+        <div>
+          <strong>Your recruiter dashboard</strong>
+          <div class="who" id="whoami"></div>
+        </div>
+        <div style="display:flex;gap:.6rem;align-items:center">
+          <span id="verifyBadge"></span>
+          <button class="btn btn-ghost" id="signOut" type="button">Sign out</button>
+        </div>
+      </div>
+
+      <!-- profile -->
+      <div class="card">
+        <h2>Employer profile</h2>
+        <p class="card-sub">Shown alongside your listings. Verification is granted after we vet your company.</p>
+        <div class="two">
+          <div class="field"><label>Your name</label><input type="text" id="p_full_name" /></div>
+          <div class="field"><label>Company <span class="req">*</span></label><input type="text" id="p_company" /></div>
+        </div>
+        <div class="two">
+          <div class="field"><label>Contact email</label><input type="email" id="p_email" /></div>
+          <div class="field"><label>Website</label><input type="text" id="p_website" placeholder="https://" /></div>
+        </div>
+        <div class="field"><label>About the company</label><textarea id="p_about" placeholder="What you do, team, mission…"></textarea></div>
+        <div id="profileMsg" class="notice hidden"></div>
+        <button class="btn btn-ink" id="saveProfile" type="button">Save profile</button>
+      </div>
+
+      <!-- post a job -->
+      <div class="card">
+        <h2>Post a job</h2>
+        <p class="card-sub">Publishes straight to the <a href="jobs.html">job board</a>. You can edit or close it anytime.</p>
+        <div class="two">
+          <div class="field"><label>Job title <span class="req">*</span></label><input type="text" id="j_title" /></div>
+          <div class="field"><label>Company <span class="req">*</span></label><input type="text" id="j_company" /></div>
+        </div>
+        <div class="two">
+          <div class="field"><label>Location</label><input type="text" id="j_location" placeholder="City, country or 'Remote'" /></div>
+          <div class="field"><label>Work mode</label>
+            <select id="j_work_mode"><option value="">Select…</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select>
+          </div>
+        </div>
+        <div class="two">
+          <div class="field"><label>Field</label>
+            <select id="j_category"><option value="">Select…</option><option>Engineering</option><option>Data</option><option>Design</option><option>Product</option><option>Marketing</option><option>Sales</option><option>Operations</option><option>Finance</option><option>Other</option></select>
+          </div>
+          <div class="field"><label>Employment type</label>
+            <select id="j_employment_type"><option value="">Select…</option><option>Full-time</option><option>Contract</option><option>Part-time</option><option>Internship</option></select>
+          </div>
+        </div>
+        <div class="two">
+          <div class="field"><label>Experience level</label>
+            <select id="j_experience"><option value="">Select…</option><option>Entry</option><option>Mid</option><option>Senior</option><option>Lead</option></select>
+          </div>
+          <div class="field"><label>Currency</label>
+            <select id="j_salary_currency"><option>USD</option><option>CAD</option><option>EUR</option><option>GBP</option><option>NGN</option></select>
+          </div>
+        </div>
+        <div class="two">
+          <div class="field"><label>Salary min (per year)</label><input type="number" id="j_salary_min" placeholder="80000" /></div>
+          <div class="field"><label>Salary max (per year)</label><input type="number" id="j_salary_max" placeholder="120000" /></div>
+        </div>
+        <div class="field" style="display:flex;align-items:center;gap:.6rem">
+          <input type="checkbox" id="j_visa" style="width:auto" />
+          <label for="j_visa" style="margin:0">This role offers visa sponsorship</label>
+        </div>
+        <div class="field"><label>Description <span class="req">*</span></label><textarea id="j_description" placeholder="Role, responsibilities, requirements…" style="min-height:160px"></textarea></div>
+        <div class="field"><label>Application link</label><input type="text" id="j_apply_url" placeholder="https:// where candidates apply" /></div>
+        <div id="jobMsg" class="notice hidden"></div>
+        <button class="btn btn-accent" id="postJob" type="button">Publish listing</button>
+      </div>
+
+      <!-- my listings -->
+      <div class="card">
+        <h2>Your listings</h2>
+        <p class="card-sub">Everything you've posted.</p>
+        <div class="grid" id="myJobs"><p class="muted">Loading…</p></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <a class="brand" href="index.html"><svg class="brand-mark" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#1C2748"/><rect x="9" y="22" width="4.5" height="9" rx="1.6" fill="#27C285"/><rect x="17.75" y="17" width="4.5" height="14" rx="1.6" fill="#27C285"/><rect x="26.5" y="11" width="4.5" height="20" rx="1.6" fill="#27C285"/><circle cx="28.75" cy="8" r="2.4" fill="#D99A28"/></svg><span data-brand style="color:var(--paper)">The Career Architect</span></a>
+    <small>Recruiter portal · Verified job listings</small>
+  </div>
+</footer>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function msg(el, text, kind){ el.className = "notice notice-"+kind; el.textContent = text; el.classList.remove("hidden"); }
+function hide(el){ el.classList.add("hidden"); }
+
+let sb = null, user = null;
+if (SUPABASE_URL && SUPABASE_ANON_KEY){
+  sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} else {
+  $("notConfigured").classList.remove("hidden");
+  $("authCard").classList.add("hidden");
+}
+
+/* ---- auth tab toggle ---- */
+let mode = "signin";
+function setMode(m){
+  mode = m;
+  $("tabSignin").classList.toggle("on", m==="signin");
+  $("tabSignup").classList.toggle("on", m==="signup");
+  $("authBtn").textContent = m==="signin" ? "Sign in" : "Create account";
+  $("authPass").autocomplete = m==="signin" ? "current-password" : "new-password";
+  hide($("authMsg"));
+}
+$("tabSignin").onclick = ()=>setMode("signin");
+$("tabSignup").onclick = ()=>setMode("signup");
+
+$("authBtn").onclick = async ()=>{
+  const email = $("authEmail").value.trim();
+  const password = $("authPass").value;
+  if(!email || password.length < 6){ msg($("authMsg"), "Enter an email and a password of at least 6 characters.", "err"); return; }
+  $("authBtn").disabled = true;
+  try{
+    if(mode==="signup"){
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if(error) throw error;
+      if(!data.session){ msg($("authMsg"), "Account created. Check your email to confirm, then sign in.", "ok"); setMode("signin"); }
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+    }
+  }catch(e){ msg($("authMsg"), e.message || "Authentication failed.", "err"); }
+  $("authBtn").disabled = false;
+};
+
+$("signOut").onclick = async ()=>{ await sb.auth.signOut(); };
+
+/* ---- profile ---- */
+async function loadProfile(){
+  const { data } = await sb.from("agent_profiles").select("*").eq("id", user.id).maybeSingle();
+  if(data){
+    $("p_full_name").value = data.full_name || "";
+    $("p_company").value = data.company || "";
+    $("p_email").value = data.email || user.email || "";
+    $("p_website").value = data.website || "";
+    $("p_about").value = data.about || "";
+    $("verifyBadge").innerHTML = data.verified
+      ? '<span class="badge badge-verified">✓ Verified</span>'
+      : '<span class="badge badge-soft">Pending verification</span>';
+  } else {
+    $("p_email").value = user.email || "";
+    $("verifyBadge").innerHTML = '<span class="badge badge-soft">Pending verification</span>';
+  }
+}
+$("saveProfile").onclick = async ()=>{
+  if(!$("p_company").value.trim()){ msg($("profileMsg"), "Company is required.", "err"); return; }
+  $("saveProfile").disabled = true;
+  const row = {
+    id: user.id,
+    full_name: $("p_full_name").value.trim() || null,
+    company: $("p_company").value.trim(),
+    email: $("p_email").value.trim() || null,
+    website: $("p_website").value.trim() || null,
+    about: $("p_about").value.trim() || null,
+  };
+  const { error } = await sb.from("agent_profiles").upsert(row);
+  if(error) msg($("profileMsg"), error.message, "err");
+  else msg($("profileMsg"), "Profile saved.", "ok");
+  $("saveProfile").disabled = false;
+};
+
+/* ---- post a job ---- */
+$("postJob").onclick = async ()=>{
+  const title = $("j_title").value.trim();
+  const company = $("j_company").value.trim();
+  const description = $("j_description").value.trim();
+  if(!title || !company || !description){ msg($("jobMsg"), "Title, company, and description are required.", "err"); return; }
+  $("postJob").disabled = true;
+  const num = v => v ? parseInt(v,10) : null;
+  const row = {
+    agent_id: user.id,
+    title, company, description,
+    location: $("j_location").value.trim() || null,
+    work_mode: $("j_work_mode").value || null,
+    category: $("j_category").value || null,
+    employment_type: $("j_employment_type").value || null,
+    experience: $("j_experience").value || null,
+    salary_currency: $("j_salary_currency").value || "USD",
+    salary_min: num($("j_salary_min").value),
+    salary_max: num($("j_salary_max").value),
+    visa_sponsorship: $("j_visa").checked,
+    apply_url: $("j_apply_url").value.trim() || null,
+    status: "published",
+  };
+  const { error } = await sb.from("jobs").insert(row);
+  if(error){ msg($("jobMsg"), error.message, "err"); }
+  else {
+    msg($("jobMsg"), "Listing published. It's live on the job board.", "ok");
+    ["j_title","j_company","j_location","j_salary_min","j_salary_max","j_description","j_apply_url"].forEach(id=>$(id).value="");
+    $("j_visa").checked = false;
+    loadMyJobs();
+  }
+  $("postJob").disabled = false;
+};
+
+/* ---- my listings ---- */
+async function loadMyJobs(){
+  const { data, error } = await sb.from("jobs").select("*").eq("agent_id", user.id).order("created_at",{ascending:false});
+  const box = $("myJobs");
+  if(error){ box.innerHTML = `<p class="muted">${esc(error.message)}</p>`; return; }
+  if(!data.length){ box.innerHTML = '<p class="muted">No listings yet — post your first above.</p>'; return; }
+  box.innerHTML = data.map(j=>`
+    <div class="my-job">
+      <div>
+        <div class="t">${esc(j.title)}</div>
+        <div class="s">${esc(j.company)} · ${esc(j.status)} · ${esc(j.work_mode||"—")}</div>
+      </div>
+      <div class="row-actions"><button class="link-btn" data-del="${j.id}">Delete</button></div>
+    </div>`).join("");
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick = async ()=>{
+    if(!confirm("Delete this listing?")) return;
+    const { error } = await sb.from("jobs").delete().eq("id", b.dataset.del);
+    if(error) alert(error.message); else loadMyJobs();
+  });
+}
+
+/* ---- session wiring ---- */
+async function onSession(session){
+  user = session?.user || null;
+  if(user){
+    $("authCard").classList.add("hidden");
+    $("dash").classList.remove("hidden");
+    $("whoami").textContent = "Signed in as " + user.email;
+    await loadProfile();
+    await loadMyJobs();
+  } else {
+    $("dash").classList.add("hidden");
+    if(SUPABASE_URL && SUPABASE_ANON_KEY) $("authCard").classList.remove("hidden");
+  }
+}
+
+if(sb){
+  const { data } = await sb.auth.getSession();
+  onSession(data.session);
+  sb.auth.onAuthStateChange((_e, session)=>onSession(session));
+}
+</script>
+</body>
+</html>
