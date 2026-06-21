@@ -1,0 +1,10 @@
+{
+  "name": "northbound",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Northbound — remote IT careers landing page with an AI career snapshot",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0"
+  }
+}
