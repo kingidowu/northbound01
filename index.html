@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Northbound — Remote IT careers in the US & Canada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  /* =========================================================
+     CONFIG — edit these
+     ========================================================= */
+  /* Brand name appears in nav, hero, footer. Swap "Northbound". */
+
+  :root{
+    --ink:#0E1733;          /* deep indigo */
+    --ink-2:#1C2748;
+    --paper:#F6F4EE;        /* warm surface */
+    --paper-2:#EEEBE1;
+    --emerald:#16895B;      /* "approved / go" accent */
+    --emerald-bright:#27C285;
+    --gold:#D99A28;
+    --slate:#5A6280;        /* muted text */
+    --line:rgba(14,23,51,.12);
+    --white:#FFFFFF;
+    --shadow:0 18px 50px -24px rgba(14,23,51,.45);
+    --r:14px;
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    font-family:"Inter",system-ui,sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:"Space Grotesk",sans-serif;font-weight:600;line-height:1.08;margin:0}
+  p{margin:0}
+  a{color:inherit;text-decoration:none}
+  .wrap{width:min(1120px,92vw);margin-inline:auto}
+
+  /* monospace eyebrow — the "tech world" signal */
+  .eyebrow{
+    font-family:"Space Mono",monospace;
+    font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--emerald);display:inline-flex;align-items:center;gap:.55rem;
+  }
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--emerald);display:inline-block}
+
+  /* ---------- NAV ---------- */
+  .nav{position:sticky;top:0;z-index:50;background:rgba(246,244,238,.82);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .brand{font-family:"Space Grotesk";font-weight:700;font-size:1.18rem;letter-spacing:-.01em;display:flex;align-items:center;gap:.5rem}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--emerald-bright);box-shadow:0 0 0 4px rgba(39,194,133,.18)}
+  .nav-links{display:flex;gap:2rem;font-size:.92rem;color:var(--slate);font-weight:500}
+  .nav-links a:hover{color:var(--ink)}
+  .btn{
+    font-family:"Space Grotesk";font-weight:600;font-size:.92rem;
+    padding:.7rem 1.25rem;border-radius:10px;border:1px solid transparent;cursor:pointer;
+    display:inline-flex;align-items:center;gap:.5rem;transition:transform .15s ease,box-shadow .15s ease,background .15s ease;
+  }
+  .btn-primary{background:var(--ink);color:var(--paper)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+  .btn-accent{background:var(--emerald);color:#fff}
+  .btn-accent:hover{transform:translateY(-2px);box-shadow:0 16px 40px -18px rgba(22,137,91,.7)}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+  .btn-ghost:hover{border-color:var(--ink)}
+  @media(max-width:760px){.nav-links{display:none}}
+
+  /* ---------- HERO ---------- */
+  .hero{padding:clamp(3.5rem,9vw,7rem) 0 clamp(3rem,7vw,5rem);position:relative;overflow:hidden}
+  .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(2rem,5vw,4rem);align-items:center}
+  @media(max-width:880px){.hero-grid{grid-template-columns:1fr;gap:2.5rem}}
+  .hero h1{font-size:clamp(2.4rem,5.4vw,4rem);letter-spacing:-.02em;margin-top:1.3rem}
+  .hero h1 em{font-style:normal;color:var(--emerald);position:relative}
+  .hero-sub{font-size:clamp(1.02rem,1.6vw,1.18rem);color:var(--slate);max-width:46ch;margin-top:1.5rem}
+  .hero-cta{display:flex;gap:.8rem;margin-top:2.1rem;flex-wrap:wrap}
+  .hero-trust{display:flex;gap:1.6rem;margin-top:2.4rem;flex-wrap:wrap;font-size:.86rem;color:var(--slate)}
+  .hero-trust b{font-family:"Space Grotesk";color:var(--ink);font-size:1.35rem;display:block;font-weight:700}
+
+  /* signature: a "status / route" card */
+  .status-card{
+    background:var(--ink);color:var(--paper);border-radius:18px;padding:1.6rem;box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  .status-card::after{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 100% 0%,rgba(39,194,133,.22),transparent 60%);pointer-events:none}
+  .stamp{
+    position:absolute;top:1.1rem;right:1.1rem;font-family:"Space Mono";font-size:.66rem;letter-spacing:.12em;
+    color:var(--emerald-bright);border:1.5px solid var(--emerald-bright);border-radius:8px;padding:.35rem .55rem;transform:rotate(6deg);text-transform:uppercase;opacity:.9
+  }
+  .route{list-style:none;padding:0;margin:.4rem 0 0;position:relative}
+  .route li{display:flex;gap:.9rem;padding:.7rem 0;align-items:flex-start;position:relative}
+  .route .node{width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(246,244,238,.35);display:grid;place-items:center;font-family:"Space Mono";font-size:.7rem;flex:0 0 auto;color:var(--paper)}
+  .route li.done .node{background:var(--emerald-bright);border-color:var(--emerald-bright);color:var(--ink)}
+  .route li:not(:last-child)::before{content:"";position:absolute;left:11.5px;top:34px;bottom:-6px;width:1.5px;background:rgba(246,244,238,.22)}
+  .route li.done:not(:last-child)::before{background:var(--emerald-bright)}
+  .route .lbl{font-family:"Space Grotesk";font-weight:500;font-size:.98rem}
+  .route .meta{font-size:.78rem;color:rgba(246,244,238,.6);font-family:"Space Mono"}
+
+  /* ---------- SECTIONS ---------- */
+  .section{padding:clamp(3.5rem,7vw,6rem) 0}
+  .section-head{max-width:62ch}
+  .section-head h2{font-size:clamp(1.8rem,3.4vw,2.6rem);letter-spacing:-.02em;margin-top:1rem}
+  .section-head p{color:var(--slate);margin-top:1rem;font-size:1.05rem}
+
+  .focus-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:2.5rem}
+  @media(max-width:820px){.focus-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.focus-grid{grid-template-columns:1fr}}
+  .focus-card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:1.5rem;transition:transform .18s ease,box-shadow .18s ease}
+  .focus-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+  .focus-card .k{font-family:"Space Mono";font-size:.72rem;color:var(--emerald);letter-spacing:.1em}
+  .focus-card h3{font-size:1.18rem;margin:.6rem 0 .4rem}
+  .focus-card p{font-size:.92rem;color:var(--slate)}
+
+  /* visa band */
+  .visa{background:var(--ink);color:var(--paper)}
+  .visa .section-head h2{color:var(--paper)}
+  .visa .eyebrow{color:var(--emerald-bright)}
+  .visa .eyebrow::before{background:var(--emerald-bright)}
+  .visa .section-head p{color:rgba(246,244,238,.72)}
+  .visa-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;margin-top:2.6rem}
+  @media(max-width:820px){.visa-cols{grid-template-columns:1fr}}
+  .visa-cols div{border-top:1px solid rgba(246,244,238,.18);padding-top:1.1rem}
+  .visa-cols h3{font-size:1.1rem;color:var(--paper)}
+  .visa-cols p{font-size:.92rem;color:rgba(246,244,238,.66);margin-top:.5rem}
+  .visa-cols .num{font-family:"Space Mono";color:var(--gold);font-size:.8rem}
+
+  /* how it works — genuine 3-step sequence, numbering earns its place */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;margin-top:2.6rem;counter-reset:s}
+  @media(max-width:820px){.steps{grid-template-columns:1fr}}
+  .step{position:relative;padding-top:1.2rem;border-top:2px solid var(--ink)}
+  .step .n{font-family:"Space Mono";font-size:.78rem;color:var(--emerald)}
+  .step h3{font-size:1.2rem;margin:.7rem 0 .5rem}
+  .step p{font-size:.94rem;color:var(--slate)}
+
+  /* ---------- ASSESSMENT ---------- */
+  .assess{background:var(--paper-2)}
+  .form-shell{background:var(--white);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);max-width:760px;margin:2.5rem auto 0;overflow:hidden}
+  .form-top{padding:1.6rem 1.8rem;border-bottom:1px solid var(--line)}
+  .track{display:flex;gap:.5rem;margin-top:1rem}
+  .track .seg{flex:1;height:6px;border-radius:99px;background:var(--paper-2)}
+  .track .seg.on{background:var(--emerald)}
+  .step-meta{font-family:"Space Mono";font-size:.74rem;color:var(--slate);letter-spacing:.06em;display:flex;justify-content:space-between}
+  .form-body{padding:1.8rem}
+  .fstep{display:none;animation:fade .35s ease}
+  .fstep.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .fstep h3{font-size:1.35rem;letter-spacing:-.01em}
+  .fstep .hint{color:var(--slate);font-size:.92rem;margin-top:.4rem;margin-bottom:1.4rem}
+  .field{margin-bottom:1.15rem}
+  .field label{display:block;font-weight:600;font-size:.9rem;margin-bottom:.45rem}
+  .field .req{color:var(--emerald)}
+  .field input[type=text],.field input[type=email],.field input[type=tel],.field select,.field textarea{
+    width:100%;padding:.8rem .9rem;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--paper);color:var(--ink);transition:border .15s ease,box-shadow .15s ease;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--emerald);box-shadow:0 0 0 3px rgba(22,137,91,.14)}
+  .field textarea{min-height:96px;resize:vertical}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  @media(max-width:560px){.two{grid-template-columns:1fr}}
+
+  .choices{display:grid;gap:.6rem}
+  .choices.cols2{grid-template-columns:1fr 1fr}
+  @media(max-width:560px){.choices.cols2{grid-template-columns:1fr}}
+  .choice{border:1px solid var(--line);border-radius:10px;padding:.75rem .85rem;cursor:pointer;display:flex;gap:.65rem;align-items:flex-start;font-size:.92rem;transition:border .15s ease,background .15s ease}
+  .choice:hover{border-color:var(--ink)}
+  .choice input{margin-top:.2rem;accent-color:var(--emerald)}
+  .choice.sel{border-color:var(--emerald);background:rgba(22,137,91,.06)}
+  .choice .ch-t{font-weight:600}
+  .choice .ch-d{display:block;color:var(--slate);font-weight:400;font-size:.84rem}
+
+  .scale{display:flex;gap:.5rem;flex-wrap:wrap}
+  .scale label{flex:1;min-width:64px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:.7rem .3rem;cursor:pointer;font-size:.84rem;transition:.15s}
+  .scale label.sel{border-color:var(--emerald);background:rgba(22,137,91,.08)}
+  .scale input{display:none}
+  .scale .num{display:block;font-family:"Space Grotesk";font-weight:700;font-size:1.1rem}
+
+  .form-nav{display:flex;justify-content:space-between;align-items:center;padding:1.3rem 1.8rem;border-top:1px solid var(--line);background:var(--paper)}
+  .err{color:#B23A3A;font-size:.82rem;margin-top:.5rem;display:none}
+  .err.show{display:block}
+
+  .review dl{display:grid;grid-template-columns:auto 1fr;gap:.5rem 1.2rem;font-size:.9rem;margin:0}
+  .review dt{color:var(--slate);font-family:"Space Mono";font-size:.78rem}
+  .review dd{margin:0;font-weight:500}
+
+  .done-state{display:none;text-align:center;padding:1rem 0}
+  .done-state.show{display:block}
+  .done-state .seal{width:74px;height:74px;border-radius:50%;background:var(--emerald);color:#fff;display:grid;place-items:center;margin:0 auto 1.2rem;font-size:2rem;box-shadow:0 0 0 8px rgba(22,137,91,.14)}
+  .done-state h3{font-size:1.5rem}
+  .done-state p{color:var(--slate);max-width:42ch;margin:.7rem auto 0}
+
+  /* ---------- FOOTER ---------- */
+  footer{background:var(--ink);color:rgba(246,244,238,.7);padding:3rem 0;margin-top:0}
+  .foot-in{display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;align-items:center}
+  .foot-in .brand{color:var(--paper)}
+  footer small{font-size:.82rem}
+
+  :focus-visible{outline:2px solid var(--emerald-bright);outline-offset:2px}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top"><span class="dot"></span><span data-brand>Northbound</span></a>
+    <div class="nav-links">
+      <a href="#focus">What we do</a>
+      <a href="#visa">Visa support</a>
+      <a href="#how">How it works</a>
+    </div>
+    <a class="btn btn-accent" href="#assessment">Start your assessment</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Remote IT careers · US &amp; Canada</span>
+      <h1>Land a remote tech role — <em>with visa sponsorship</em> — in the US or Canada.</h1>
+      <p class="hero-sub">We help DevOps, cloud, data, and AI professionals turn scattered job-hunting into a clear plan: the right roles, the right recruiters, and a sponsorship path that actually works.</p>
+      <div class="hero-cta">
+        <a class="btn btn-accent" href="#assessment">Start your assessment</a>
+        <a class="btn btn-ghost" href="#how">See how it works</a>
+      </div>
+      <div class="hero-trust">
+        <div><b>2 countries</b>US &amp; Canada coverage</div>
+        <div><b>5 tracks</b>DevOps · Cloud · Data · Coding · AI</div>
+        <div><b>1 plan</b>Built around your goals</div>
+      </div>
+    </div>
+
+    <!-- signature: status / route card -->
+    <div class="status-card" aria-hidden="true">
+      <span class="stamp">Sponsorship&nbsp;✓</span>
+      <span class="eyebrow" style="color:var(--emerald-bright)">Your track</span>
+      <ul class="route">
+        <li class="done"><span class="node">✓</span><span><span class="lbl">Assessment</span><br><span class="meta">where you are today</span></span></li>
+        <li class="done"><span class="node">✓</span><span><span class="lbl">Strategy &amp; positioning</span><br><span class="meta">resume · profile · targets</span></span></li>
+        <li><span class="node">3</span><span><span class="lbl">Recruiter connections</span><br><span class="meta">sponsoring employers</span></span></li>
+        <li><span class="node">4</span><span><span class="lbl">Offer &amp; relocation</span><br><span class="meta">US / Canada</span></span></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<!-- FOCUS -->
+<section class="section" id="focus">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">What we do</span>
+      <h2>Built for one kind of career: remote IT, done deliberately.</h2>
+      <p>We specialize instead of generalize. If you work in or want to break into these areas, we know the roles, the hiring managers, and the recruiters who sponsor.</p>
+    </div>
+    <div class="focus-grid">
+      <div class="focus-card"><div class="k">/ 01</div><h3>DevOps &amp; Platform</h3><p>CI/CD, Kubernetes, Terraform, SRE and platform engineering roles at scaling teams.</p></div>
+      <div class="focus-card"><div class="k">/ 02</div><h3>Cloud</h3><p>AWS, Azure, and GCP — architecture, infrastructure, and cloud security positions.</p></div>
+      <div class="focus-card"><div class="k">/ 03</div><h3>Databases &amp; Data</h3><p>DBA, data engineering, and analytics roles across SQL and modern data stacks.</p></div>
+      <div class="focus-card"><div class="k">/ 04</div><h3>Software &amp; Coding</h3><p>Backend, frontend, and full-stack engineering across the languages teams hire for.</p></div>
+      <div class="focus-card"><div class="k">/ 05</div><h3>AI &amp; ML</h3><p>Machine learning, MLOps, and applied AI roles as demand outpaces supply.</p></div>
+      <div class="focus-card"><div class="k">/ 06</div><h3>Not sure yet?</h3><p>Early-career or switching tracks? The assessment helps us point you the right way.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- VISA -->
+<section class="section visa" id="visa">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Visa &amp; relocation</span>
+      <h2>The sponsorship question, handled head-on.</h2>
+      <p>Most career advice skips the part that matters most when you need authorization to work. We don't. We focus on employers and recruiters who sponsor, and we build your search around it.</p>
+    </div>
+    <div class="visa-cols">
+      <div><span class="num">01</span><h3>We map your status</h3><p>Citizen, permanent resident, work visa, student, or applying from abroad — your situation shapes the plan.</p></div>
+      <div><span class="num">02</span><h3>We target sponsors</h3><p>We aim your search at companies and recruiters with a track record of sponsoring in the US and Canada.</p></div>
+      <div><span class="num">03</span><h3>We prep the conversation</h3><p>How and when to raise sponsorship, so it strengthens your candidacy instead of ending it.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="section" id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2>Three steps from stuck to sponsored.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="n">STEP 01</div><h3>Complete the assessment</h3><p>A focused questionnaire about your background, skills, visa status, and goals. About 5 minutes.</p></div>
+      <div class="step"><div class="n">STEP 02</div><h3>Get your strategy</h3><p>We review your answers and come back with a tailored plan: target roles, positioning, and next moves.</p></div>
+      <div class="step"><div class="n">STEP 03</div><h3>Connect &amp; land</h3><p>We connect you with the right recruiters and sponsoring employers, and coach you through to an offer.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ASSESSMENT -->
+<section class="section assess" id="assessment">
+  <div class="wrap">
+    <div class="section-head" style="text-align:center;margin-inline:auto">
+      <span class="eyebrow" style="justify-content:center">Career assessment</span>
+      <h2>Tell us where you are. We'll map where you're going.</h2>
+      <p style="margin-inline:auto">This helps us understand your current situation, goals, and the specific steps to get you there. Your answers are private.</p>
+    </div>
+
+    <div class="form-shell">
+      <div class="form-top">
+        <div class="step-meta"><span id="stepLabel">About you</span><span id="stepCount">Step 1 of 6</span></div>
+        <div class="track" id="track"></div>
+      </div>
+
+      <div class="form-body">
+        <!-- STEP 1 -->
+        <div class="fstep active" data-step="1">
+          <h3>About you</h3>
+          <p class="hint">So we know who we're building a plan for.</p>
+          <div class="two">
+            <div class="field"><label>Full name <span class="req">*</span></label><input type="text" name="full_name" required /></div>
+            <div class="field"><label>Email <span class="req">*</span></label><input type="email" name="email" required /></div>
+          </div>
+          <div class="two">
+            <div class="field"><label>Phone</label><input type="tel" name="phone" /></div>
+            <div class="field"><label>Country you live in now <span class="req">*</span></label><input type="text" name="country" required /></div>
+          </div>
+          <div class="field"><label>LinkedIn or portfolio (optional)</label><input type="text" name="linkedin" placeholder="https://" /></div>
+          <div class="err" data-err>Please fill in the required fields.</div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="fstep" data-step="2">
+          <h3>Your career now</h3>
+          <p class="hint">A snapshot of your current situation.</p>
+          <div class="two">
+            <div class="field"><label>Current or most recent job title <span class="req">*</span></label><input type="text" name="current_title" required /></div>
+            <div class="field"><label>Years of experience <span class="req">*</span></label>
+              <select name="experience" required>
+                <option value="">Select…</option>
+                <option>Student / no experience yet</option>
+                <option>Less than 1 year</option><option>1–3 years</option>
+                <option>4–6 years</option><option>7–10 years</option><option>10+ years</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label>Current employment status <span class="req">*</span></label>
+            <select name="status" required>
+              <option value="">Select…</option>
+              <option>Employed full-time</option><option>Employed part-time / contract</option>
+              <option>Unemployed, actively looking</option><option>Student</option>
+              <option>Employed but exploring</option>
+            </select>
+          </div>
+          <div class="field"><label>How satisfied are you with your career right now? <span class="req">*</span></label>
+            <div class="scale" data-scale="satisfaction">
+              <label><input type="radio" name="satisfaction" value="1" required><span class="num">1</span>Very low</label>
+              <label><input type="radio" name="satisfaction" value="2"><span class="num">2</span>Low</label>
+              <label><input type="radio" name="satisfaction" value="3"><span class="num">3</span>Okay</label>
+              <label><input type="radio" name="satisfaction" value="4"><span class="num">4</span>Good</label>
+              <label><input type="radio" name="satisfaction" value="5"><span class="num">5</span>High</label>
+            </div>
+          </div>
+          <div class="err" data-err>Please complete the required fields.</div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="fstep" data-step="3">
+          <h3>Your IT focus</h3>
+          <p class="hint">Where you work, or want to.</p>
+          <div class="field"><label>Primary field <span class="req">*</span></label>
+            <div class="choices cols2" data-radio="field">
+              <label class="choice"><input type="radio" name="field" value="DevOps" required><span><span class="ch-t">DevOps / Platform</span></span></label>
+              <label class="choice"><input type="radio" name="field" value="Cloud"><span><span class="ch-t">Cloud</span></span></label>
+              <label class="choice"><input type="radio" name="field" value="Database"><span><span class="ch-t">Databases / Data</span></span></label>
+              <label class="choice"><input type="radio" name="field" value="Coding"><span><span class="ch-t">Software / Coding</span></span></label>
+              <label class="choice"><input type="radio" name="field" value="AI/ML"><span><span class="ch-t">AI / ML</span></span></label>
+              <label class="choice"><input type="radio" name="field" value="Other"><span><span class="ch-t">Other / not sure</span></span></label>
+            </div>
+          </div>
+          <div class="field"><label>Key skills &amp; tools <span class="req">*</span></label><input type="text" name="skills" placeholder="e.g. AWS, Kubernetes, Python, Terraform" required /></div>
+          <div class="field"><label>Target role you're aiming for</label><input type="text" name="target_role" placeholder="e.g. Senior Cloud Engineer" /></div>
+          <div class="err" data-err>Please choose a field and list your skills.</div>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="fstep" data-step="4">
+          <h3>Education</h3>
+          <p class="hint">For context — not a gatekeeper.</p>
+          <div class="field"><label>Highest level of education <span class="req">*</span></label>
+            <select name="education" required>
+              <option value="">Select…</option>
+              <option>High School Diploma</option><option>Associate Degree</option>
+              <option>Bachelor's Degree</option><option>Master's Degree</option>
+              <option>Doctorate</option><option>Bootcamp / Certification</option>
+            </select>
+          </div>
+          <div class="field"><label>Are you currently enrolled in school? <span class="req">*</span></label>
+            <div class="choices cols2" data-radio="enrolled">
+              <label class="choice"><input type="radio" name="enrolled" value="Yes" required><span class="ch-t">Yes</span></label>
+              <label class="choice"><input type="radio" name="enrolled" value="No"><span class="ch-t">No</span></label>
+            </div>
+          </div>
+          <div class="field"><label>Field of study (optional)</label><input type="text" name="field_of_study" /></div>
+          <div class="err" data-err>Please complete the required fields.</div>
+        </div>
+
+        <!-- STEP 5 -->
+        <div class="fstep" data-step="5">
+          <h3>Visa &amp; location</h3>
+          <p class="hint">The part most services skip. We lead with it.</p>
+          <div class="field"><label>Current work authorization <span class="req">*</span></label>
+            <select name="work_auth" required>
+              <option value="">Select…</option>
+              <option>US/Canada citizen or permanent resident</option>
+              <option>Hold a valid work visa</option>
+              <option>On a student visa</option>
+              <option>Need sponsorship to work</option>
+              <option>Applying from outside the US/Canada</option>
+            </select>
+          </div>
+          <div class="field"><label>Do you need visa sponsorship? <span class="req">*</span></label>
+            <div class="choices cols2" data-radio="needs_sponsorship">
+              <label class="choice"><input type="radio" name="needs_sponsorship" value="Yes" required><span class="ch-t">Yes</span></label>
+              <label class="choice"><input type="radio" name="needs_sponsorship" value="No"><span class="ch-t">No</span></label>
+              <label class="choice"><input type="radio" name="needs_sponsorship" value="Not sure"><span class="ch-t">Not sure</span></label>
+            </div>
+          </div>
+          <div class="field"><label>Target country <span class="req">*</span></label>
+            <div class="choices cols2" data-radio="target_country">
+              <label class="choice"><input type="radio" name="target_country" value="United States" required><span class="ch-t">United States</span></label>
+              <label class="choice"><input type="radio" name="target_country" value="Canada"><span class="ch-t">Canada</span></label>
+              <label class="choice"><input type="radio" name="target_country" value="Either"><span class="ch-t">Either works</span></label>
+            </div>
+          </div>
+          <div class="field"><label>Work preference <span class="req">*</span></label>
+            <div class="choices cols2" data-radio="work_pref">
+              <label class="choice"><input type="radio" name="work_pref" value="Remote only" required><span class="ch-t">Remote only</span></label>
+              <label class="choice"><input type="radio" name="work_pref" value="Remote, open to relocate"><span class="ch-t">Remote, open to relocate</span></label>
+            </div>
+          </div>
+          <div class="err" data-err>Please complete the required fields.</div>
+        </div>
+
+        <!-- STEP 6 -->
+        <div class="fstep" data-step="6">
+          <h3>Goals &amp; review</h3>
+          <p class="hint">Last part. Then we map your plan.</p>
+          <div class="two">
+            <div class="field"><label>Target salary range</label>
+              <select name="salary">
+                <option value="">Select…</option>
+                <option>Under $80k</option><option>$80k–$120k</option>
+                <option>$120k–$160k</option><option>$160k–$200k</option><option>$200k+</option>
+              </select>
+            </div>
+            <div class="field"><label>Timeline to make a move</label>
+              <select name="timeline">
+                <option value="">Select…</option>
+                <option>ASAP</option><option>1–3 months</option>
+                <option>3–6 months</option><option>6–12 months</option><option>Just exploring</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label>Biggest challenges right now (choose all that apply)</label>
+            <div class="choices" data-check="challenges">
+              <label class="choice"><input type="checkbox" name="challenges" value="Finding sponsoring employers"><span class="ch-t">Finding sponsoring employers</span></label>
+              <label class="choice"><input type="checkbox" name="challenges" value="Not getting interviews"><span class="ch-t">Not getting interviews</span></label>
+              <label class="choice"><input type="checkbox" name="challenges" value="Resume / LinkedIn"><span class="ch-t">Resume / LinkedIn positioning</span></label>
+              <label class="choice"><input type="checkbox" name="challenges" value="Skills gap"><span class="ch-t">Closing a skills gap</span></label>
+              <label class="choice"><input type="checkbox" name="challenges" value="Interview prep"><span class="ch-t">Interview preparation</span></label>
+            </div>
+          </div>
+          <div class="field"><label>Anything else we should know?</label><textarea name="notes" placeholder="Goals, constraints, deadlines…"></textarea></div>
+
+          <div class="field review">
+            <label>Quick review</label>
+            <dl id="reviewList"></dl>
+          </div>
+          <div class="err" data-err>Something went wrong submitting. Please try again.</div>
+        </div>
+
+        <!-- DONE -->
+        <div class="done-state" id="doneState">
+          <div class="seal">✓</div>
+          <h3>Assessment received.</h3>
+          <p>Thanks — we have what we need to start mapping your plan. We'll be in touch by email with your next steps.</p>
+        </div>
+      </div>
+
+      <div class="form-nav" id="formNav">
+        <button class="btn btn-ghost" id="backBtn" type="button" style="visibility:hidden">Back</button>
+        <button class="btn btn-accent" id="nextBtn" type="button">Continue</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap foot-in">
+    <a class="brand" href="#top"><span class="dot"></span><span data-brand>Northbound</span></a>
+    <small>Remote IT career development · United States &amp; Canada · Visa-sponsorship focused</small>
+    <small>© <span id="yr"></span> <span data-brand>Northbound</span> Career Development</small>
+  </div>
+</footer>
+
+<script>
+/* =========================================================
+   CONFIG
+   ========================================================= */
+const BRAND = "Northbound";                 // ← change your brand name here
+const SUPABASE_URL = "";                    // e.g. "https://abcd.supabase.co"
+const SUPABASE_ANON_KEY = "";               // your anon public key
+const SUPABASE_TABLE = "assessments";
+
+/* apply brand + year */
+document.querySelectorAll("[data-brand]").forEach(el => el.textContent = BRAND);
+document.title = BRAND + " — Remote IT careers in the US & Canada";
+document.getElementById("yr").textContent = new Date().getFullYear();
+
+/* =========================================================
+   MULTI-STEP FORM
+   ========================================================= */
+const TOTAL = 6;
+const labels = ["About you","Your career now","Your IT focus","Education","Visa & location","Goals & review"];
+let current = 1;
+
+const steps   = [...document.querySelectorAll(".fstep")];
+const track   = document.getElementById("track");
+const backBtn = document.getElementById("backBtn");
+const nextBtn = document.getElementById("nextBtn");
+const stepLabel = document.getElementById("stepLabel");
+const stepCount = document.getElementById("stepCount");
+
+/* build progress track */
+for (let i=0;i<TOTAL;i++){ const s=document.createElement("div"); s.className="seg"; track.appendChild(s); }
+const segs = [...track.children];
+
+/* visual selection state for choice cards + scale */
+document.querySelectorAll(".choice input, .scale input").forEach(inp=>{
+  inp.addEventListener("change", ()=>{
+    const group = inp.closest("[data-radio],[data-check],[data-scale]");
+    if (inp.type === "radio"){
+      group.querySelectorAll(".choice, .scale label").forEach(l=>l.classList.remove("sel"));
+      inp.closest(".choice, label")?.classList.add("sel");
+    } else { // checkbox
+      inp.closest(".choice").classList.toggle("sel", inp.checked);
+    }
+    clearErr();
+  });
+});
+document.querySelectorAll("input,select,textarea").forEach(el=>el.addEventListener("input",clearErr));
+
+function render(){
+  steps.forEach(s=>s.classList.toggle("active", +s.dataset.step===current));
+  segs.forEach((s,i)=>s.classList.toggle("on", i < current));
+  stepLabel.textContent = labels[current-1];
+  stepCount.textContent = `Step ${current} of ${TOTAL}`;
+  backBtn.style.visibility = current===1 ? "hidden" : "visible";
+  nextBtn.textContent = current===TOTAL ? "Submit assessment" : "Continue";
+  if (current===TOTAL) buildReview();
+}
+
+function validateStep(){
+  const stepEl = steps[current-1];
+  const required = [...stepEl.querySelectorAll("[required]")];
+  let ok = true;
+  // group radios by name; required attr only on first of group
+  const checkedRadioNames = new Set();
+  for (const el of required){
+    if (el.type==="radio"){
+      const any = stepEl.querySelector(`input[name="${el.name}"]:checked`);
+      if (!any) ok=false;
+    } else if (!el.value.trim()){
+      ok=false;
+    } else if (el.type==="email" && !/^[^@]+@[^@]+\.[^@]+$/.test(el.value)){
+      ok=false;
+    }
+  }
+  return ok;
+}
+
+function clearErr(){ steps[current-1].querySelector("[data-err]")?.classList.remove("show"); }
+function showErr(){ steps[current-1].querySelector("[data-err]")?.classList.add("show"); }
+
+function collect(){
+  const data={};
+  document.querySelectorAll(".form-body input,.form-body select,.form-body textarea").forEach(el=>{
+    if (el.type==="radio"){ if(el.checked) data[el.name]=el.value; }
+    else if (el.type==="checkbox"){ (data[el.name]=data[el.name]||[]); if(el.checked) data[el.name].push(el.value); }
+    else if (el.value.trim()) data[el.name]=el.value.trim();
+  });
+  return data;
+}
+
+const niceLabel = {
+  full_name:"Name", email:"Email", country:"Country", current_title:"Title",
+  experience:"Experience", field:"Field", skills:"Skills", education:"Education",
+  work_auth:"Work auth", needs_sponsorship:"Sponsorship", target_country:"Target", work_pref:"Work"
+};
+function buildReview(){
+  const d=collect(); const dl=document.getElementById("reviewList"); dl.innerHTML="";
+  Object.keys(niceLabel).forEach(k=>{
+    if(!d[k]) return;
+    const dt=document.createElement("dt"); dt.textContent=niceLabel[k];
+    const dd=document.createElement("dd"); dd.textContent=Array.isArray(d[k])?d[k].join(", "):d[k];
+    dl.append(dt,dd);
+  });
+}
+
+async function submit(){
+  const payload = collect();
+  payload.submitted_at = new Date().toISOString();
+
+  // If Supabase is configured, send it; otherwise just confirm locally.
+  if (SUPABASE_URL && SUPABASE_ANON_KEY){
+    try{
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`,{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "apikey":SUPABASE_ANON_KEY,
+          "Authorization":`Bearer ${SUPABASE_ANON_KEY}`,
+          "Prefer":"return=minimal"
+        },
+        body: JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error(await res.text());
+    }catch(e){
+      console.error("Submit failed:", e);
+      showErr();
+      return false;
+    }
+  } else {
+    console.log("Assessment payload (no Supabase configured):", payload);
+  }
+  return true;
+}
+
+nextBtn.addEventListener("click", async ()=>{
+  if(!validateStep()){ showErr(); return; }
+  if(current < TOTAL){ current++; render(); window.scrollTo({top:document.getElementById("assessment").offsetTop-20,behavior:"smooth"}); return; }
+  // final step → submit
+  nextBtn.disabled=true; nextBtn.textContent="Submitting…";
+  const ok = await submit();
+  nextBtn.disabled=false; nextBtn.textContent="Submit assessment";
+  if(ok){
+    document.querySelector(".form-body").querySelectorAll(".fstep").forEach(s=>s.classList.remove("active"));
+    document.getElementById("doneState").classList.add("show");
+    document.getElementById("formNav").style.display="none";
+    document.querySelector(".form-top").style.display="none";
+    window.scrollTo({top:document.getElementById("assessment").offsetTop-20,behavior:"smooth"});
+  }
+});
+backBtn.addEventListener("click", ()=>{ if(current>1){current--; render();} });
+
+render();
+</script>
+</body>
+</html>
