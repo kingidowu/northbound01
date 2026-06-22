@@ -18,6 +18,16 @@ Career-services platform: a smart assessment, AI career snapshot, a **verified j
 
 ---
 
+## AI knowledge library
+
+Every resume (via the ATS check) and every assessment is run through Claude to extract structured knowledge (field, seniority, skills, common gaps, keywords) into the `knowledge_library` table. Recent entries are fed back as context to the ATS check and the assessment snapshot, so the tools sharpen as volume grows. Submissions are also stored in `assessments`, and the admin page surfaces both.
+
+**Requires one server-side env var on Vercel** (in addition to `ANTHROPIC_API_KEY`):
+- `SUPABASE_SERVICE_ROLE_KEY` — from Supabase → Settings → API → `service_role` secret. **Server-only — never put this in `config.js` or any page.** Writes bypass RLS; the admin reads via the `is_admin()` policy.
+- `SUPABASE_URL` — same project URL as in `config.js` (set it as a Vercel env var too so the functions can reach Supabase).
+
+If those aren't set, the AI tools still work — they just skip the library (no learning, no storage).
+
 ## Original brand note
 
 Previously branded "Northbound" (remote IT + visa sponsorship). Now **The Career Architect**, general career services.

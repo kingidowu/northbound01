@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { getServiceClient, retrieveContext, ingest } from "../lib/knowledge.js";
 
 // The API key lives ONLY here, server-side, read from a Vercel environment
 // variable. It must never appear in index.html or any client-shipped code.
@@ -74,14 +75,18 @@ export default async function handler(req, res) {
       .map(([k, v]) => `${k}: ${v}`)
       .join("\n");
 
+    // Knowledge library: accumulated context in, submission stored after.
+    const sb = getServiceClient();
+    const learned = await retrieveContext(sb);
+
     const message = await client.messages.create({
       model: "claude-opus-4-8",
       max_tokens: 1500,
       output_config: {
-        effort: "low", // keep this snappy — it runs on form submit
+        effort: "low", // keep this snappy, it runs on form submit
         format: { type: "json_schema", schema: SCHEMA },
       },
-      system: SYSTEM,
+      system: SYSTEM + learned,
       messages: [
         {
           role: "user",
@@ -92,6 +97,15 @@ export default async function handler(req, res) {
 
     const text = message.content.find((b) => b.type === "text")?.text || "{}";
     res.status(200).json(JSON.parse(text));
+
+    // Persist the submission (for the admin) + ingest into the library — best-effort.
+    if (sb) {
+      sb.from("assessments").insert({
+        full_name: a.full_name || null, email: a.email || null,
+        field: a.field || null, data: a,
+      }).then(() => {}, () => {});
+    }
+    ingest(sb, "assessment", a.full_name || "Assessment", profile).catch(() => {});
   } catch (e) {
     console.error("AI snapshot failed:", e);
     res.status(502).json({ error: "AI snapshot unavailable" });

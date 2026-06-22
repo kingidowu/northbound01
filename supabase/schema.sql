@@ -98,6 +98,39 @@ create policy "profiles admin update" on public.agent_profiles for update using 
 drop policy if exists "jobs admin all" on public.jobs;
 create policy "jobs admin all" on public.jobs for all using (public.is_admin()) with check (public.is_admin());
 
+-- ---------- Assessment submissions (admin-visible) ----------
+create table if not exists public.assessments (
+  id          uuid primary key default gen_random_uuid(),
+  full_name   text,
+  email       text,
+  field       text,
+  data        jsonb,
+  created_at  timestamptz not null default now()
+);
+alter table public.assessments enable row level security;
+drop policy if exists "assessments admin read" on public.assessments;
+create policy "assessments admin read" on public.assessments for select using (public.is_admin());
+-- (inserts come from the server via the service role, which bypasses RLS)
+
+-- ---------- AI knowledge library ----------
+-- Structured knowledge extracted from every resume/assessment. The more rows,
+-- the richer the context fed back to the AI tools. Written by the server
+-- (service role); readable by admins.
+create table if not exists public.knowledge_library (
+  id          uuid primary key default gen_random_uuid(),
+  source_type text not null,           -- resume | assessment | job
+  title       text,
+  summary     text,
+  extraction  jsonb,
+  tags        text[],
+  created_at  timestamptz not null default now()
+);
+create index if not exists knowledge_created_idx on public.knowledge_library (created_at desc);
+create index if not exists knowledge_tags_idx on public.knowledge_library using gin (tags);
+alter table public.knowledge_library enable row level security;
+drop policy if exists "knowledge admin read" on public.knowledge_library;
+create policy "knowledge admin read" on public.knowledge_library for select using (public.is_admin());
+
 -- ---------- Bootstrap your first admin ----------
 -- After you sign up (via admin.html or agent.html), run THIS with your email to
 -- grant yourself admin (run it as the postgres role in the SQL editor):

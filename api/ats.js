@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { getServiceClient, retrieveContext, ingest } from "../lib/knowledge.js";
 
-const client = new Anthropic(); // ANTHROPIC_API_KEY from Vercel env — never client-side
+const client = new Anthropic(); // ANTHROPIC_API_KEY from Vercel env, never client-side
 
 const SCHEMA = {
   type: "object",
@@ -34,13 +35,17 @@ export default async function handler(req, res) {
 
     const prompt = jd
       ? `RESUME:\n${resume}\n\nTARGET JOB DESCRIPTION:\n${jd}\n\nAnalyze ATS fit against this specific job.`
-      : `RESUME:\n${resume}\n\nNo target job was provided — analyze general ATS readiness.`;
+      : `RESUME:\n${resume}\n\nNo target job was provided. Analyze general ATS readiness.`;
+
+    // Knowledge library: pull accumulated patterns to sharpen the review.
+    const sb = getServiceClient();
+    const learned = await retrieveContext(sb);
 
     const message = await client.messages.create({
       model: "claude-opus-4-8",
       max_tokens: 2000,
       output_config: { effort: "medium", format: { type: "json_schema", schema: SCHEMA } },
-      system: SYSTEM,
+      system: SYSTEM + learned,
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -48,6 +53,9 @@ export default async function handler(req, res) {
     const data = JSON.parse(text);
     if (typeof data.ats_score === "number") data.ats_score = Math.max(0, Math.min(100, Math.round(data.ats_score)));
     res.status(200).json(data);
+
+    // Store this resume in the knowledge library (after responding, best-effort).
+    ingest(sb, "resume", "Resume check", resume).catch(() => {});
   } catch (e) {
     console.error("ATS analysis failed:", e);
     res.status(502).json({ error: "Analysis unavailable. Please try again." });
