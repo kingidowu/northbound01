@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Resume ATS check — The Career Architect</title>
+<title>Resume ATS check - The Career Architect</title>
 <meta name="description" content="Free AI resume ATS check: score your resume against applicant tracking systems, find missing keywords, and get rewrite suggestions." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%230E1733'/%3E%3Cpath d='M11 30 L20 11 L29 30' fill='none' stroke='%2327C285' stroke-width='3.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3Cline x1='15' y1='23.5' x2='25' y2='23.5' stroke='%2327C285' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='10' r='2.4' fill='%23D99A28'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -64,7 +64,7 @@
         <div class="field"><textarea id="resume" placeholder="Paste your full resume text here…" style="min-height:280px"></textarea></div>
       </div>
       <div>
-        <div class="field"><label>Target job description <span class="muted">(optional — sharpens the match)</span></label>
+        <div class="field"><label>Target job description <span class="muted">(optional - sharpens the match)</span></label>
           <textarea id="jd" placeholder="Paste the job posting you're aiming for…" style="min-height:280px"></textarea>
         </div>
       </div>
@@ -89,7 +89,7 @@
           <div class="res-block"><h3>Formatting flags</h3><ul id="formatting"></ul></div>
         </div>
         <div class="res-block" style="margin-top:1.4rem"><h3>Rewrite suggestions</h3><ul id="tips"></ul></div>
-        <p class="muted" style="font-size:.82rem;margin-top:1.4rem">An AI estimate to guide your edits — not a guarantee of any specific ATS result. Want a human to take it further? <a href="index.html#assessment" style="color:var(--emerald)">Start your assessment</a>.</p>
+        <p class="muted" style="font-size:.82rem;margin-top:1.4rem">An AI estimate to guide your edits - not a guarantee of any specific ATS result. Want a human to take it further? <a href="index.html#assessment" style="color:var(--emerald)">Start your assessment</a>.</p>
       </div>
     </section>
   </div>
@@ -128,15 +128,15 @@ $("file").addEventListener("change", async (e)=>{
     } else {
       $("resume").value = (await f.text()).trim();
     }
-    $("dropLabel").textContent = "✓ " + f.name + " loaded — edit below if needed";
+    $("dropLabel").textContent = "✓ " + f.name + " loaded - edit below if needed";
   }catch(err){
     console.error(err);
-    $("dropLabel").textContent = "Couldn't read that file — paste the text instead";
+    $("dropLabel").textContent = "Couldn't read that file - paste the text instead";
   }
 });
 
 function gaugeColor(v){ return v>=75 ? "#16895B" : v>=50 ? "#D99A28" : "#B23A3A"; }
-function list(el, arr){ $(el).innerHTML = (arr||[]).map(x=>`<li>${esc(x)}</li>`).join("") || '<li class="muted">—</li>'; }
+function list(el, arr){ $(el).innerHTML = (arr||[]).map(x=>`<li>${esc(x)}</li>`).join("") || '<li class="muted">-</li>'; }
 
 $("analyze").addEventListener("click", async ()=>{
   clearMsg();
