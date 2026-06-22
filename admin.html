@@ -87,6 +87,12 @@
       </div>
 
       <div class="card">
+        <h2>Applications <span class="badge badge-soft" id="appCount"></span></h2>
+        <p class="card-sub">Every job application across all recruiters.</p>
+        <div class="grid" id="applications"><p class="muted">Loading…</p></div>
+      </div>
+
+      <div class="card">
         <h2>Assessments</h2>
         <p class="card-sub">Every intake submission from the homepage.</p>
         <div class="grid" id="assessments"><p class="muted">Loading…</p></div>
@@ -173,6 +179,20 @@ async function loadJobs(){
   });
 }
 
+async function loadApplications(){
+  const { data, error } = await sb.from("applications").select("*, jobs(title)").order("created_at",{ascending:false}).limit(200);
+  const box=$("applications");
+  if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
+  $("appCount").textContent = (data?.length || 0) + " total";
+  if(!data || !data.length){ box.innerHTML='<p class="muted">No applications yet.</p>'; return; }
+  box.innerHTML = data.map(a=>`
+    <div class="row">
+      <div><div class="t">${esc(a.applicant_name)} <span class="badge badge-soft">${esc(a.status)}</span></div>
+      <div class="s">${esc(a.jobs?.title||"Role")} · ${esc(a.applicant_email)}</div></div>
+      <div class="s">${esc((a.created_at||"").slice(0,10))}</div>
+    </div>`).join("");
+}
+
 async function loadAssessments(){
   const { data, error } = await sb.from("assessments").select("id, full_name, email, field, created_at").order("created_at",{ascending:false}).limit(100);
   const box=$("assessments");
@@ -213,7 +233,7 @@ async function onSession(session){
     $("notAdmin").classList.add("hidden");
     $("dash").classList.remove("hidden");
     $("whoami").textContent = "Admin · " + user.email;
-    loadRecruiters(); loadJobs(); loadAssessments(); loadKnowledge();
+    loadRecruiters(); loadJobs(); loadApplications(); loadAssessments(); loadKnowledge();
   } else {
     $("dash").classList.add("hidden");
     $("myEmail").textContent = user.email;

@@ -98,6 +98,39 @@ create policy "profiles admin update" on public.agent_profiles for update using 
 drop policy if exists "jobs admin all" on public.jobs;
 create policy "jobs admin all" on public.jobs for all using (public.is_admin()) with check (public.is_admin());
 
+-- ---------- Job applications ----------
+create table if not exists public.applications (
+  id              uuid primary key default gen_random_uuid(),
+  job_id          uuid not null references public.jobs(id) on delete cascade,
+  applicant_name  text not null,
+  applicant_email text not null,
+  applicant_phone text,
+  resume_text     text,
+  cover_note      text,
+  status          text not null default 'new',   -- new | reviewed | contacted | rejected
+  created_at      timestamptz not null default now()
+);
+create index if not exists applications_job_idx on public.applications (job_id, created_at desc);
+alter table public.applications enable row level security;
+
+-- Anyone may apply to a PUBLISHED job (anonymous candidates allowed).
+drop policy if exists "applications insert" on public.applications;
+create policy "applications insert" on public.applications for insert
+  with check (exists (select 1 from public.jobs j where j.id = job_id and j.status = 'published'));
+
+-- Recruiters see + manage applications to THEIR OWN jobs.
+drop policy if exists "applications recruiter read"   on public.applications;
+drop policy if exists "applications recruiter update" on public.applications;
+create policy "applications recruiter read" on public.applications for select
+  using (exists (select 1 from public.jobs j where j.id = job_id and j.agent_id = auth.uid()));
+create policy "applications recruiter update" on public.applications for update
+  using (exists (select 1 from public.jobs j where j.id = job_id and j.agent_id = auth.uid()));
+
+-- Admins see + manage everything.
+drop policy if exists "applications admin all" on public.applications;
+create policy "applications admin all" on public.applications for all
+  using (public.is_admin()) with check (public.is_admin());
+
 -- ---------- Assessment submissions (admin-visible) ----------
 create table if not exists public.assessments (
   id          uuid primary key default gen_random_uuid(),

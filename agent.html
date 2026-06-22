@@ -147,6 +147,13 @@
         <p class="card-sub">Everything you've posted.</p>
         <div class="grid" id="myJobs"><p class="muted">Loading…</p></div>
       </div>
+
+      <!-- applicants -->
+      <div class="card">
+        <h2>Applicants <span class="badge badge-soft" id="appCount"></span></h2>
+        <p class="card-sub">People who applied to your listings through the job board.</p>
+        <div class="grid" id="applicants"><p class="muted">Loading…</p></div>
+      </div>
     </section>
   </div>
 </main>
@@ -297,6 +304,30 @@ async function loadMyJobs(){
   });
 }
 
+/* ---- applicants ---- */
+async function loadApplicants(){
+  const { data, error } = await sb.from("applications")
+    .select("*, jobs(title)").order("created_at",{ascending:false});
+  const box = $("applicants");
+  if(error){ box.innerHTML = `<p class="muted">${esc(error.message)}</p>`; return; }
+  $("appCount").textContent = (data?.length || 0) + " total";
+  if(!data || !data.length){ box.innerHTML = '<p class="muted">No applications yet.</p>'; return; }
+  box.innerHTML = data.map(a=>`
+    <div class="my-job" style="align-items:flex-start">
+      <div>
+        <div class="t">${esc(a.applicant_name)} <span class="badge badge-soft">${esc(a.status)}</span></div>
+        <div class="s">${esc(a.jobs?.title || "Role")} · ${esc(a.applicant_email)}${a.applicant_phone?" · "+esc(a.applicant_phone):""}</div>
+        ${a.cover_note?`<div class="s" style="margin-top:.3rem;font-family:inherit;color:var(--ink)">${esc(a.cover_note.slice(0,200))}</div>`:""}
+        ${a.resume_text?`<button class="link-btn" style="color:var(--emerald)" data-resume="${a.id}">View resume</button>`:""}
+      </div>
+      <div class="s">${esc((a.created_at||"").slice(0,10))}</div>
+    </div>`).join("");
+  box.querySelectorAll("[data-resume]").forEach(b=>b.onclick=()=>{
+    const a = data.find(x=>x.id===b.dataset.resume);
+    if(a) alert(a.resume_text);
+  });
+}
+
 /* ---- session wiring ---- */
 async function onSession(session){
   user = session?.user || null;
@@ -306,6 +337,7 @@ async function onSession(session){
     $("whoami").textContent = "Signed in as " + user.email;
     await loadProfile();
     await loadMyJobs();
+    await loadApplicants();
   } else {
     $("dash").classList.add("hidden");
     if(SUPABASE_URL && SUPABASE_ANON_KEY) $("authCard").classList.remove("hidden");

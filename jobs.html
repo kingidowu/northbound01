@@ -26,6 +26,12 @@
   .sal{font-family:"Space Grotesk";font-weight:600;color:var(--ink)}
   .results{display:grid;gap:1rem}
   .empty{text-align:center;color:var(--slate);padding:3rem 1rem}
+  .modal{position:fixed;inset:0;background:rgba(14,23,51,.5);display:none;align-items:center;justify-content:center;padding:1rem;z-index:100}
+  .modal.open{display:flex}
+  .modal-card{background:var(--white);border-radius:16px;max-width:540px;width:100%;max-height:90vh;overflow:auto;padding:1.6rem 1.7rem;box-shadow:var(--shadow)}
+  .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem}
+  .modal-head h3{font-size:1.2rem}
+  .modal-close{background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--slate);line-height:1}
 </style>
 </head>
 <body>
@@ -79,6 +85,32 @@
   </div>
 </main>
 
+<!-- Apply modal -->
+<div class="modal" id="applyModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div><h3 id="applyTitle">Apply</h3><div class="muted" id="applyCo" style="font-size:.9rem"></div></div>
+      <button class="modal-close" id="applyClose" aria-label="Close">×</button>
+    </div>
+    <div id="applyForm">
+      <div class="two">
+        <div class="field"><label>Full name <span class="req">*</span></label><input type="text" id="ap_name" /></div>
+        <div class="field"><label>Email <span class="req">*</span></label><input type="email" id="ap_email" /></div>
+      </div>
+      <div class="field"><label>Phone</label><input type="tel" id="ap_phone" /></div>
+      <div class="field"><label>Paste your resume</label><textarea id="ap_resume" placeholder="Paste your resume text here…"></textarea></div>
+      <div class="field"><label>Cover note</label><textarea id="ap_note" placeholder="Why you're a great fit (optional)"></textarea></div>
+      <div id="applyMsg" class="notice hidden"></div>
+      <button class="btn btn-accent" id="applySubmit" type="button" style="width:100%">Submit application</button>
+    </div>
+    <div id="applyDone" class="hidden" style="text-align:center;padding:1.4rem 0">
+      <div style="font-size:2.2rem">✓</div>
+      <h3 style="margin-top:.4rem">Application sent</h3>
+      <p class="muted" style="margin-top:.5rem">The recruiter will see it in their dashboard. Good luck!</p>
+    </div>
+  </div>
+</div>
+
 <footer>
   <div class="wrap foot-in">
     <a class="brand" href="index.html"><svg class="brand-mark" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#1C2748"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg><span data-brand style="color:var(--paper)">The Career Architect</span></a>
@@ -116,9 +148,7 @@ function card(j){
   const meta = [j.work_mode, j.employment_type, j.category, j.experience].filter(Boolean)
     .map(m=>`<span class="chip">${esc(m)}</span>`).join("");
   const visa = j.visa_sponsorship ? '<span class="chip" style="color:var(--emerald)">Visa sponsorship</span>' : "";
-  const apply = j.apply_url
-    ? `<a class="btn btn-accent" href="${esc(j.apply_url)}" target="_blank" rel="noopener">Apply</a>`
-    : "";
+  const apply = `<button class="btn btn-accent" data-apply="${esc(j.id)}">Apply</button>`;
   return `<article class="card job">
     <div class="job-top">
       <div>
@@ -170,6 +200,50 @@ document.getElementById("searchBtn").addEventListener("click", applyFilters);
   document.getElementById(id).addEventListener("change", applyFilters);
 });
 document.getElementById("q").addEventListener("keydown", e=>{ if(e.key==="Enter") applyFilters(); });
+
+/* ---- apply modal ---- */
+const $ = id => document.getElementById(id);
+let applyJobId = null;
+function openApply(id){
+  const j = all.find(x => String(x.id) === String(id));
+  if(!j) return;
+  applyJobId = j.id;
+  $("applyTitle").textContent = "Apply: " + j.title;
+  $("applyCo").textContent = j.company + (j.location ? " · " + j.location : "");
+  $("applyForm").classList.remove("hidden");
+  $("applyDone").classList.add("hidden");
+  $("applyMsg").classList.add("hidden");
+  ["ap_name","ap_email","ap_phone","ap_resume","ap_note"].forEach(x=>$(x).value="");
+  $("applyModal").classList.add("open");
+}
+function closeApply(){ $("applyModal").classList.remove("open"); }
+results.addEventListener("click", e=>{
+  const btn = e.target.closest("[data-apply]");
+  if(btn) openApply(btn.dataset.apply);
+});
+$("applyClose").addEventListener("click", closeApply);
+$("applyModal").addEventListener("click", e=>{ if(e.target.id==="applyModal") closeApply(); });
+
+$("applySubmit").addEventListener("click", async ()=>{
+  const name = $("ap_name").value.trim(), email = $("ap_email").value.trim();
+  const m = $("applyMsg");
+  if(!name || !/^[^@]+@[^@]+\.[^@]+$/.test(email)){
+    m.className="notice notice-err"; m.textContent="Please enter your name and a valid email."; m.classList.remove("hidden"); return;
+  }
+  if(!sb){ m.className="notice notice-err"; m.textContent="Applications aren't available yet."; m.classList.remove("hidden"); return; }
+  $("applySubmit").disabled = true;
+  const { error } = await sb.from("applications").insert({
+    job_id: applyJobId,
+    applicant_name: name,
+    applicant_email: email,
+    applicant_phone: $("ap_phone").value.trim() || null,
+    resume_text: $("ap_resume").value.trim() || null,
+    cover_note: $("ap_note").value.trim() || null,
+  });
+  $("applySubmit").disabled = false;
+  if(error){ m.className="notice notice-err"; m.textContent=error.message; m.classList.remove("hidden"); }
+  else { $("applyForm").classList.add("hidden"); $("applyDone").classList.remove("hidden"); }
+});
 
 load();
 </script>
