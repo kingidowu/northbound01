@@ -92,6 +92,8 @@
       <div><h3 id="applyTitle">Apply</h3><div class="muted" id="applyCo" style="font-size:.9rem"></div></div>
       <button class="modal-close" id="applyClose" aria-label="Close">×</button>
     </div>
+    <div class="job-meta" id="applyMeta" style="margin-bottom:.8rem"></div>
+    <div id="applyDesc" style="font-size:.92rem;color:var(--slate);white-space:pre-wrap;max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:.9rem 1rem;margin-bottom:1.3rem"></div>
     <div id="applyForm">
       <div class="two">
         <div class="field"><label>Full name <span class="req">*</span></label><input type="text" id="ap_name" /></div>
@@ -99,7 +101,12 @@
       </div>
       <div class="field"><label>Phone</label><input type="tel" id="ap_phone" /></div>
       <div class="field"><label>Paste your resume</label><textarea id="ap_resume" placeholder="Paste your resume text here…"></textarea></div>
-      <div class="field"><label>Cover note</label><textarea id="ap_note" placeholder="Why you're a great fit (optional)"></textarea></div>
+      <div class="field">
+        <label style="display:flex;justify-content:space-between;align-items:center;gap:1rem">Cover note
+          <button type="button" id="aiCover" class="btn btn-ghost" style="padding:.35rem .7rem;font-size:.8rem">✨ Draft with AI</button>
+        </label>
+        <textarea id="ap_note" placeholder="Why you're a great fit (optional, or let AI draft it from your resume)"></textarea>
+      </div>
       <div id="applyMsg" class="notice hidden"></div>
       <button class="btn btn-accent" id="applySubmit" type="button" style="width:100%">Submit application</button>
     </div>
@@ -203,13 +210,18 @@ document.getElementById("q").addEventListener("keydown", e=>{ if(e.key==="Enter"
 
 /* ---- apply modal ---- */
 const $ = id => document.getElementById(id);
-let applyJobId = null;
+let applyJobId = null, applyJob = null;
 function openApply(id){
   const j = all.find(x => String(x.id) === String(id));
   if(!j) return;
-  applyJobId = j.id;
-  $("applyTitle").textContent = "Apply: " + j.title;
+  applyJobId = j.id; applyJob = j;
+  $("applyTitle").textContent = j.title;
   $("applyCo").textContent = j.company + (j.location ? " · " + j.location : "");
+  const meta = [j.work_mode, j.employment_type, j.category, j.experience].filter(Boolean).map(m=>`<span class="chip">${esc(m)}</span>`).join("")
+    + (j.visa_sponsorship ? '<span class="chip" style="color:var(--emerald)">Visa sponsorship</span>' : "")
+    + (salary(j) ? `<span class="chip">${esc(salary(j))}</span>` : "");
+  $("applyMeta").innerHTML = meta;
+  $("applyDesc").textContent = j.description || "No description provided.";
   $("applyForm").classList.remove("hidden");
   $("applyDone").classList.add("hidden");
   $("applyMsg").classList.add("hidden");
@@ -243,6 +255,28 @@ $("applySubmit").addEventListener("click", async ()=>{
   $("applySubmit").disabled = false;
   if(error){ m.className="notice notice-err"; m.textContent=error.message; m.classList.remove("hidden"); }
   else { $("applyForm").classList.add("hidden"); $("applyDone").classList.remove("hidden"); }
+});
+
+/* ---- AI cover-note draft ---- */
+$("aiCover").addEventListener("click", async ()=>{
+  if(!applyJob) return;
+  const btn = $("aiCover"), orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "Drafting…";
+  try{
+    const res = await fetch("/api/cover", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        job_title: applyJob.title, company: applyJob.company, description: applyJob.description,
+        background: $("ap_resume").value.trim() || $("ap_name").value.trim()
+      })
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error || "Failed");
+    $("ap_note").value = d.cover_note || "";
+  }catch(e){
+    const m = $("applyMsg"); m.className="notice notice-err"; m.textContent = e.message; m.classList.remove("hidden");
+  }
+  btn.disabled = false; btn.textContent = orig;
 });
 
 load();
