@@ -76,3 +76,29 @@ create or replace view public.jobs_public with (security_invoker = on) as
 
 -- Make sure the browser (anon) and signed-in recruiters can read the view.
 grant select on public.jobs_public to anon, authenticated;
+
+-- ---------- Admins ----------
+create table if not exists public.admins (
+  id          uuid primary key references auth.users(id) on delete cascade,
+  created_at  timestamptz not null default now()
+);
+alter table public.admins enable row level security;
+drop policy if exists "admins self read" on public.admins;
+create policy "admins self read" on public.admins for select using (auth.uid() = id);
+
+-- Helper: is the current user an admin? (security definer so it can read admins under RLS)
+create or replace function public.is_admin()
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (select 1 from public.admins where id = auth.uid());
+$$;
+
+-- Admins can verify recruiters and moderate any job.
+drop policy if exists "profiles admin update" on public.agent_profiles;
+create policy "profiles admin update" on public.agent_profiles for update using (public.is_admin());
+drop policy if exists "jobs admin all" on public.jobs;
+create policy "jobs admin all" on public.jobs for all using (public.is_admin()) with check (public.is_admin());
+
+-- ---------- Bootstrap your first admin ----------
+-- After you sign up (via admin.html or agent.html), run THIS with your email to
+-- grant yourself admin (run it as the postgres role in the SQL editor):
+--   insert into public.admins (id) select id from auth.users where email = 'you@example.com';

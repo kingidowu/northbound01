@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Resume ATS check — The Career Architect</title>
+<meta name="description" content="Free AI resume ATS check: score your resume against applicant tracking systems, find missing keywords, and get rewrite suggestions." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%230E1733'/%3E%3Crect x='9' y='22' width='4.5' height='9' rx='1.6' fill='%2327C285'/%3E%3Crect x='17.75' y='17' width='4.5' height='14' rx='1.6' fill='%2327C285'/%3E%3Crect x='26.5' y='11' width='4.5' height='20' rx='1.6' fill='%2327C285'/%3E%3Ccircle cx='28.75' cy='8' r='2.4' fill='%23D99A28'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .ats-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;margin-top:2rem}
+  @media(max-width:820px){.ats-grid{grid-template-columns:1fr}}
+  .drop{border:1.5px dashed var(--line);border-radius:10px;padding:.7rem .9rem;font-size:.86rem;color:var(--slate);display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.6rem}
+  .drop input{display:none}
+  .ats-result{margin-top:2rem;display:none}
+  .score-card{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap}
+  .gauge{--v:0;width:120px;height:120px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
+    background:conic-gradient(var(--g,var(--emerald)) calc(var(--v)*1%), var(--paper-2) 0)}
+  .gauge .inner{width:92px;height:92px;border-radius:50%;background:var(--white);display:grid;place-items:center;text-align:center}
+  .gauge b{font-family:"Space Grotesk";font-size:1.9rem;line-height:1}
+  .gauge span{font-size:.66rem;color:var(--slate);font-family:"Space Mono";letter-spacing:.08em}
+  .res-cols{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.6rem}
+  @media(max-width:680px){.res-cols{grid-template-columns:1fr}}
+  .res-block h3{font-size:1rem;margin-bottom:.5rem}
+  .res-block ul{margin:0;padding-left:1.1rem;color:var(--slate);font-size:.92rem}
+  .res-block li{margin:.3rem 0}
+  .kw{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.3rem}
+  .kw span{background:rgba(22,137,91,.1);color:var(--emerald);border:1px solid rgba(22,137,91,.25);border-radius:7px;padding:.2rem .5rem;font-size:.8rem;font-family:"Space Mono"}
+  .spin{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--emerald);border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:.5rem}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#0E1733"/><rect x="9" y="22" width="4.5" height="9" rx="1.6" fill="#27C285"/><rect x="17.75" y="17" width="4.5" height="14" rx="1.6" fill="#27C285"/><rect x="26.5" y="11" width="4.5" height="20" rx="1.6" fill="#27C285"/><circle cx="28.75" cy="8" r="2.4" fill="#D99A28"/></svg>
+      <span data-brand>The Career Architect</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="ats.html" class="active">Resume check</a>
+      <a href="jobs.html">Jobs</a>
+      <a class="btn btn-ghost" href="agent.html">For recruiters</a>
+    </div>
+  </div>
+</nav>
+
+<main class="section">
+  <div class="wrap">
+    <div class="page-head">
+      <span class="eyebrow">Free AI tool</span>
+      <h1>Will your resume pass the bots?</h1>
+      <p>Most applications are filtered by an ATS before a human ever sees them. Paste your resume (and optionally the job you're targeting) for an instant score, the keywords you're missing, and exactly what to fix.</p>
+    </div>
+
+    <div class="ats-grid">
+      <div>
+        <div class="field" style="margin-bottom:.4rem"><label>Your resume <span class="req">*</span></label></div>
+        <label class="drop"><span id="dropLabel">📄 Upload PDF/TXT, or paste below</span><input type="file" id="file" accept=".pdf,.txt,.md" /></label>
+        <div class="field"><textarea id="resume" placeholder="Paste your full resume text here…" style="min-height:280px"></textarea></div>
+      </div>
+      <div>
+        <div class="field"><label>Target job description <span class="muted">(optional — sharpens the match)</span></label>
+          <textarea id="jd" placeholder="Paste the job posting you're aiming for…" style="min-height:280px"></textarea>
+        </div>
+      </div>
+    </div>
+    <div id="atsMsg" class="notice hidden"></div>
+    <button class="btn btn-accent" id="analyze" type="button">Check my resume</button>
+
+    <section class="ats-result" id="result">
+      <div class="card">
+        <div class="score-card">
+          <div class="gauge" id="gauge"><div class="inner"><div><b id="scoreNum">0</b><br><span>ATS SCORE</span></div></div></div>
+          <div style="flex:1;min-width:220px">
+            <h2 id="verdict" style="font-size:1.2rem"></h2>
+          </div>
+        </div>
+        <div class="res-cols">
+          <div class="res-block"><h3>✓ Strengths</h3><ul id="strengths"></ul></div>
+          <div class="res-block"><h3>△ Gaps to close</h3><ul id="gaps"></ul></div>
+        </div>
+        <div class="res-cols">
+          <div class="res-block"><h3>Keywords to add</h3><div class="kw" id="keywords"></div></div>
+          <div class="res-block"><h3>Formatting flags</h3><ul id="formatting"></ul></div>
+        </div>
+        <div class="res-block" style="margin-top:1.4rem"><h3>Rewrite suggestions</h3><ul id="tips"></ul></div>
+        <p class="muted" style="font-size:.82rem;margin-top:1.4rem">An AI estimate to guide your edits — not a guarantee of any specific ATS result. Want a human to take it further? <a href="index.html#assessment" style="color:var(--emerald)">Start your assessment</a>.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <a class="brand" href="index.html"><svg class="brand-mark" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#1C2748"/><rect x="9" y="22" width="4.5" height="9" rx="1.6" fill="#27C285"/><rect x="17.75" y="17" width="4.5" height="14" rx="1.6" fill="#27C285"/><rect x="26.5" y="11" width="4.5" height="20" rx="1.6" fill="#27C285"/><circle cx="28.75" cy="8" r="2.4" fill="#D99A28"/></svg><span data-brand style="color:var(--paper)">The Career Architect</span></a>
+    <small>Resume &amp; ATS · Career strategy · Verified jobs</small>
+  </div>
+</footer>
+
+<script type="module">
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function msg(t,k){ const m=$("atsMsg"); m.className="notice notice-"+k; m.textContent=t; m.classList.remove("hidden"); }
+function clearMsg(){ $("atsMsg").classList.add("hidden"); }
+
+/* ---- file upload: .txt direct, .pdf via pdf.js ---- */
+$("file").addEventListener("change", async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  $("dropLabel").textContent = "Reading " + f.name + "…";
+  try{
+    if(f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")){
+      const pdfjs = await import("https://esm.sh/pdfjs-dist@4.7.76/build/pdf.min.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://esm.sh/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs";
+      const buf = await f.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: buf }).promise;
+      let text = "";
+      for(let i=1;i<=pdf.numPages;i++){
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(it=>it.str).join(" ") + "\n";
+      }
+      $("resume").value = text.trim();
+    } else {
+      $("resume").value = (await f.text()).trim();
+    }
+    $("dropLabel").textContent = "✓ " + f.name + " loaded — edit below if needed";
+  }catch(err){
+    console.error(err);
+    $("dropLabel").textContent = "Couldn't read that file — paste the text instead";
+  }
+});
+
+function gaugeColor(v){ return v>=75 ? "#16895B" : v>=50 ? "#D99A28" : "#B23A3A"; }
+function list(el, arr){ $(el).innerHTML = (arr||[]).map(x=>`<li>${esc(x)}</li>`).join("") || '<li class="muted">—</li>'; }
+
+$("analyze").addEventListener("click", async ()=>{
+  clearMsg();
+  const resume = $("resume").value.trim();
+  if(resume.length < 80){ msg("Paste your resume text first (a few lines at least).", "err"); return; }
+  $("analyze").disabled = true;
+  $("analyze").innerHTML = '<span class="spin"></span>Analyzing…';
+  try{
+    const res = await fetch("/api/ats", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ resume, jobDescription: $("jd").value.trim() })
+    });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error || "Analysis failed");
+
+    const score = d.ats_score ?? 0;
+    const g = $("gauge");
+    g.style.setProperty("--v", score);
+    g.style.setProperty("--g", gaugeColor(score));
+    $("scoreNum").textContent = score;
+    $("verdict").textContent = d.verdict || "";
+    list("strengths", d.strengths);
+    list("gaps", d.gaps);
+    list("formatting", d.formatting_flags);
+    list("tips", d.rewrite_tips);
+    $("keywords").innerHTML = (d.keywords_to_add||[]).map(k=>`<span>${esc(k)}</span>`).join("") || '<span class="muted" style="background:none;border:none;color:var(--slate)">None flagged</span>';
+    $("result").style.display = "block";
+    $("result").scrollIntoView({ behavior:"smooth", block:"start" });
+  }catch(e){
+    msg(e.message || "Something went wrong. Try again.", "err");
+  }
+  $("analyze").disabled = false;
+  $("analyze").textContent = "Check my resume";
+});
+</script>
+</body>
+</html>

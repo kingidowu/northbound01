@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin — The Career Architect</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%230E1733'/%3E%3Crect x='9' y='22' width='4.5' height='9' rx='1.6' fill='%2327C285'/%3E%3Crect x='17.75' y='17' width='4.5' height='14' rx='1.6' fill='%2327C285'/%3E%3Crect x='26.5' y='11' width='4.5' height='20' rx='1.6' fill='%2327C285'/%3E%3Ccircle cx='28.75' cy='8' r='2.4' fill='%23D99A28'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .auth-wrap{max-width:420px;margin:2.5rem auto 0}
+  .row{border:1px solid var(--line);border-radius:10px;padding:.85rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+  .row .t{font-family:"Space Grotesk";font-weight:600}
+  .row .s{font-size:.8rem;color:var(--slate);font-family:"Space Mono"}
+  .dash{display:grid;gap:1.4rem;margin-top:2rem}
+  .dash-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+  .card h2{font-size:1.2rem;margin-bottom:.3rem}
+  .card .card-sub{color:var(--slate);font-size:.9rem;margin-bottom:1.1rem}
+  .link-btn{background:none;border:none;color:#9B2C2C;font:inherit;cursor:pointer;font-size:.85rem;text-decoration:underline}
+  .toggle{font:inherit;font-size:.82rem;font-weight:600;border:1px solid var(--line);background:var(--white);border-radius:8px;padding:.4rem .7rem;cursor:pointer}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#0E1733"/><rect x="9" y="22" width="4.5" height="9" rx="1.6" fill="#27C285"/><rect x="17.75" y="17" width="4.5" height="14" rx="1.6" fill="#27C285"/><rect x="26.5" y="11" width="4.5" height="20" rx="1.6" fill="#27C285"/><circle cx="28.75" cy="8" r="2.4" fill="#D99A28"/></svg>
+      <span data-brand>The Career Architect</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="jobs.html">Jobs</a>
+      <a href="agent.html">For recruiters</a>
+    </div>
+  </div>
+</nav>
+
+<main class="section">
+  <div class="wrap">
+    <div class="page-head">
+      <span class="eyebrow">Admin</span>
+      <h1>Control room.</h1>
+      <p>Verify recruiters and moderate listings. Admin accounts only.</p>
+    </div>
+
+    <div id="notConfigured" class="notice notice-warn hidden">
+      Not connected. Add Supabase keys in <code>config.js</code> and run <code>supabase/schema.sql</code>.
+    </div>
+
+    <!-- login -->
+    <section class="auth-wrap card" id="authCard">
+      <div class="field"><label>Email</label><input type="email" id="email" autocomplete="email" /></div>
+      <div class="field"><label>Password</label><input type="password" id="pass" autocomplete="current-password" minlength="6" /></div>
+      <div id="authMsg" class="notice hidden"></div>
+      <button class="btn btn-accent" id="signIn" type="button" style="width:100%">Sign in</button>
+    </section>
+
+    <!-- not-admin notice -->
+    <section class="auth-wrap card hidden" id="notAdmin">
+      <div class="notice notice-warn" style="margin:0">
+        This account isn't an admin. To grant it, run in the Supabase SQL editor:<br>
+        <code style="display:block;margin-top:.5rem;word-break:break-all">insert into public.admins (id) select id from auth.users where email = '<span id="myEmail"></span>';</code>
+      </div>
+      <button class="btn btn-ghost" id="signOut2" type="button" style="width:100%;margin-top:1rem">Sign out</button>
+    </section>
+
+    <!-- dashboard -->
+    <section class="dash hidden" id="dash">
+      <div class="dash-head">
+        <strong id="whoami"></strong>
+        <button class="btn btn-ghost" id="signOut" type="button">Sign out</button>
+      </div>
+
+      <div class="card">
+        <h2>Recruiters</h2>
+        <p class="card-sub">Toggle the ✓ Verified badge that appears on their listings.</p>
+        <div class="grid" id="recruiters"><p class="muted">Loading…</p></div>
+      </div>
+
+      <div class="card">
+        <h2>All listings</h2>
+        <p class="card-sub">Every job across all recruiters. Remove anything that shouldn't be live.</p>
+        <div class="grid" id="alljobs"><p class="muted">Loading…</p></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <a class="brand" href="index.html"><svg class="brand-mark" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#1C2748"/><rect x="9" y="22" width="4.5" height="9" rx="1.6" fill="#27C285"/><rect x="17.75" y="17" width="4.5" height="14" rx="1.6" fill="#27C285"/><rect x="26.5" y="11" width="4.5" height="20" rx="1.6" fill="#27C285"/><circle cx="28.75" cy="8" r="2.4" fill="#D99A28"/></svg><span data-brand style="color:var(--paper)">The Career Architect</span></a>
+    <small>Admin</small>
+  </div>
+</footer>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function msg(el,t,k){ el.className="notice notice-"+k; el.textContent=t; el.classList.remove("hidden"); }
+
+let sb=null, user=null;
+if(SUPABASE_URL && SUPABASE_ANON_KEY){ sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+else { $("notConfigured").classList.remove("hidden"); $("authCard").classList.add("hidden"); }
+
+$("signIn").onclick = async ()=>{
+  const email=$("email").value.trim(), password=$("pass").value;
+  if(!email || password.length<6){ msg($("authMsg"),"Enter your admin email and password.","err"); return; }
+  $("signIn").disabled=true;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error) msg($("authMsg"), error.message, "err");
+  $("signIn").disabled=false;
+};
+const signOut = async ()=>{ await sb.auth.signOut(); };
+$("signOut").onclick = signOut; $("signOut2").onclick = signOut;
+
+async function isAdmin(){
+  const { data } = await sb.from("admins").select("id").eq("id", user.id).maybeSingle();
+  return !!data;
+}
+
+async function loadRecruiters(){
+  const { data, error } = await sb.from("agent_profiles").select("*").order("created_at",{ascending:false});
+  const box=$("recruiters");
+  if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
+  if(!data.length){ box.innerHTML='<p class="muted">No recruiters yet.</p>'; return; }
+  box.innerHTML = data.map(r=>`
+    <div class="row">
+      <div>
+        <div class="t">${esc(r.company || "—")} ${r.verified?'<span class="badge badge-verified">✓ Verified</span>':'<span class="badge badge-soft">Unverified</span>'}</div>
+        <div class="s">${esc(r.full_name||"")}${r.email?" · "+esc(r.email):""}</div>
+      </div>
+      <button class="toggle" data-id="${r.id}" data-v="${r.verified?1:0}">${r.verified?"Unverify":"Verify"}</button>
+    </div>`).join("");
+  box.querySelectorAll(".toggle").forEach(b=>b.onclick=async ()=>{
+    const newVal = b.dataset.v!=="1";
+    const { error } = await sb.from("agent_profiles").update({ verified:newVal }).eq("id", b.dataset.id);
+    if(error) alert(error.message); else loadRecruiters();
+  });
+}
+
+async function loadJobs(){
+  const { data, error } = await sb.from("jobs").select("*").order("created_at",{ascending:false});
+  const box=$("alljobs");
+  if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
+  if(!data.length){ box.innerHTML='<p class="muted">No listings yet.</p>'; return; }
+  box.innerHTML = data.map(j=>`
+    <div class="row">
+      <div><div class="t">${esc(j.title)}</div><div class="s">${esc(j.company)} · ${esc(j.status)} · ${esc(j.work_mode||"—")}</div></div>
+      <button class="link-btn" data-del="${j.id}">Delete</button>
+    </div>`).join("");
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=async ()=>{
+    if(!confirm("Delete this listing?")) return;
+    const { error } = await sb.from("jobs").delete().eq("id", b.dataset.del);
+    if(error) alert(error.message); else loadJobs();
+  });
+}
+
+async function onSession(session){
+  user = session?.user || null;
+  if(!user){
+    $("dash").classList.add("hidden"); $("notAdmin").classList.add("hidden");
+    if(SUPABASE_URL && SUPABASE_ANON_KEY) $("authCard").classList.remove("hidden");
+    return;
+  }
+  $("authCard").classList.add("hidden");
+  if(await isAdmin()){
+    $("notAdmin").classList.add("hidden");
+    $("dash").classList.remove("hidden");
+    $("whoami").textContent = "Admin · " + user.email;
+    loadRecruiters(); loadJobs();
+  } else {
+    $("dash").classList.add("hidden");
+    $("myEmail").textContent = user.email;
+    $("notAdmin").classList.remove("hidden");
+  }
+}
+
+if(sb){
+  const { data } = await sb.auth.getSession();
+  onSession(data.session);
+  sb.auth.onAuthStateChange((_e, s)=>onSession(s));
+}
+</script>
+</body>
+</html>
