@@ -99,6 +99,14 @@
       </div>
 
       <div class="card">
+        <h2>Add resumes to the library</h2>
+        <p class="card-sub">Paste a resume to teach the AI directly. The more you add, the sharper the resume check, assessment, and job matching become.</p>
+        <div class="field"><textarea id="ingestText" placeholder="Paste a full resume here…" style="min-height:150px"></textarea></div>
+        <div id="ingestMsg" class="notice hidden"></div>
+        <button class="btn btn-ink" id="ingestBtn" type="button">Add to library</button>
+      </div>
+
+      <div class="card">
         <h2>AI knowledge library <span class="badge badge-soft" id="kCount"></span></h2>
         <p class="card-sub">Structured knowledge the AI has learned from resumes &amp; assessments. The more entries, the smarter the resume check and snapshots get.</p>
         <div class="grid" id="knowledge"><p class="muted">Loading…</p></div>
@@ -220,6 +228,25 @@ async function loadKnowledge(){
     </div>`;
   }).join("");
 }
+
+$("ingestBtn").onclick = async ()=>{
+  const text = $("ingestText").value.trim();
+  const m = $("ingestMsg");
+  if(text.length < 80){ msg(m,"Paste a full resume first.","err"); return; }
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session){ msg(m,"Session expired - sign in again.","err"); return; }
+  $("ingestBtn").disabled = true; const o = $("ingestBtn").textContent; $("ingestBtn").textContent = "Adding…";
+  try{
+    const res = await fetch("/api/ingest", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ resume: text, access_token: session.access_token }) });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error || "Failed");
+    msg(m, `Added (${d.field||"?"} / ${d.seniority||"?"}). Library updated.`, "ok");
+    $("ingestText").value = "";
+    loadKnowledge();
+  }catch(e){ msg(m, e.message, "err"); }
+  $("ingestBtn").disabled = false; $("ingestBtn").textContent = o;
+};
 
 async function onSession(session){
   user = session?.user || null;
