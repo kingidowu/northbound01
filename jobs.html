@@ -96,6 +96,20 @@
     </div>
 
     <div class="results" id="results"><div class="empty">Loading roles…</div></div>
+
+    <div style="margin-top:2.6rem;border-top:1px solid var(--line);padding-top:1.6rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap">
+        <div>
+          <h2 style="font-size:1.3rem">Live roles from the web</h2>
+          <p class="muted" style="font-size:.9rem;margin-top:.2rem">Fresh listings pulled from across the internet.</p>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <select id="webCountry" style="font:inherit;border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;background:var(--paper)"><option value="us">United States</option><option value="ca">Canada</option></select>
+          <button class="btn btn-ink" id="webBtn" type="button">🌐 Load web jobs</button>
+        </div>
+      </div>
+      <div class="results" id="webResults" style="margin-top:1.2rem"></div>
+    </div>
   </div>
 </main>
 
@@ -373,6 +387,33 @@ async function refreshUser(){
   if(all.length) applyFilters();
 }
 if(sb) sb.auth.onAuthStateChange(()=>refreshUser());
+
+/* ---- live jobs from the web (Adzuna) ---- */
+function webCard(j){
+  const meta = [j.work_mode, j.employment_type, j.category].filter(Boolean).map(m=>`<span class="chip">${esc(m)}</span>`).join("");
+  return `<article class="card job">
+    <div class="job-top">
+      <div><h3>${esc(j.title)}</h3><div class="co">${esc(j.company)}${j.location?` · ${esc(j.location)}`:""}</div></div>
+      <span class="badge badge-soft">🌐 Web</span>
+    </div>
+    <div class="job-meta">${meta}</div>
+    <p class="job-desc">${esc((j.description||"").slice(0,240))}${(j.description||"").length>240?"…":""}</p>
+    <div class="job-foot"><span class="sal">${esc(salary(j))}</span>${j.apply_url?`<a class="btn btn-accent" href="${esc(j.apply_url)}" target="_blank" rel="noopener">Apply on source</a>`:""}</div>
+  </article>`;
+}
+$("webBtn").addEventListener("click", async ()=>{
+  const btn=$("webBtn"), o=btn.textContent; btn.disabled=true; btn.textContent="Loading…";
+  $("webResults").innerHTML='<div class="empty">Fetching live roles…</div>';
+  try{
+    const res = await fetch("/api/external-jobs",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ what: $("q").value.trim() || $("category").value || "", country: $("webCountry").value })});
+    const d = await res.json();
+    if(d.configured===false){ $("webResults").innerHTML='<div class="empty">Web jobs aren\'t connected yet (add an Adzuna API key).</div>'; }
+    else if(!d.jobs || !d.jobs.length){ $("webResults").innerHTML='<div class="empty">No web roles found - try a different search term above.</div>'; }
+    else { $("webResults").innerHTML = d.jobs.map(webCard).join(""); }
+  }catch(e){ $("webResults").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+  btn.disabled=false; btn.textContent=o;
+});
 
 load().then(refreshUser);
 </script>
