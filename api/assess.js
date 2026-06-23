@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getServiceClient, retrieveContext, ingest } from "../lib/knowledge.js";
+import { rateLimit } from "../lib/ratelimit.js";
 
 // The API key lives ONLY here, server-side, read from a Vercel environment
 // variable. It must never appear in index.html or any client-shipped code.
@@ -42,6 +43,8 @@ export default async function handler(req, res) {
     res.status(500).json({ error: "AI not configured" });
     return;
   }
+  const rl = await rateLimit(req, { limit: 8, windowMs: 60_000 });
+  if (!rl.ok) { res.setHeader("Retry-After", rl.retryAfter); res.status(429).json({ error: "Too many requests. Please wait a minute." }); return; }
 
   try {
     const a = req.body && typeof req.body === "object" ? req.body : {};

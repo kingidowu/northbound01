@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { rateLimit } from "../lib/ratelimit.js";
 
 const client = new Anthropic(); // ANTHROPIC_API_KEY from Vercel env, server-only
 
@@ -9,6 +10,8 @@ Tie the candidate's background to what the role needs. If the background is thin
 export default async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
   if (!process.env.ANTHROPIC_API_KEY) { res.status(500).json({ error: "AI not configured" }); return; }
+  const rl = await rateLimit(req, { limit: 12, windowMs: 60_000 });
+  if (!rl.ok) { res.setHeader("Retry-After", rl.retryAfter); res.status(429).json({ error: "Too many requests. Please wait a minute." }); return; }
 
   try {
     const b = req.body && typeof req.body === "object" ? req.body : {};

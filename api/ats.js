@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getServiceClient, retrieveContext, ingest } from "../lib/knowledge.js";
+import { rateLimit } from "../lib/ratelimit.js";
 
 const client = new Anthropic(); // ANTHROPIC_API_KEY from Vercel env, never client-side
 
@@ -26,6 +27,8 @@ Be specific and actionable — cite real gaps and concrete fixes, not generic ad
 export default async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
   if (!process.env.ANTHROPIC_API_KEY) { res.status(500).json({ error: "AI not configured" }); return; }
+  const rl = await rateLimit(req, { limit: 10, windowMs: 60_000 });
+  if (!rl.ok) { res.setHeader("Retry-After", rl.retryAfter); res.status(429).json({ error: "Too many requests. Please wait a minute." }); return; }
 
   try {
     const body = req.body && typeof req.body === "object" ? req.body : {};

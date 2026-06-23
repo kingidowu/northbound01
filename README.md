@@ -28,6 +28,18 @@ Every resume (via the ATS check) and every assessment is run through Claude to e
 
 If those aren't set, the AI tools still work — they just skip the library (no learning, no storage).
 
+## AI job matching
+
+`/api/match` ([api/match.js](api/match.js)) takes a pasted resume, scores it against every published job with Claude (adaptive thinking), and the job board (`jobs.html`) sorts roles best-match-first with a % badge and one-line reason. `jobs.html` also injects `JobPosting` structured data so listings can surface in Google Jobs.
+
+## Rate limiting the AI endpoints
+
+All AI endpoints (`/api/ats`, `/api/assess`, `/api/cover`, `/api/match`) are per-IP rate limited via [lib/ratelimit.js](lib/ratelimit.js) to protect your Anthropic spend. For **global** limits across all serverless instances, add an Upstash Redis (free tier) and set these Vercel env vars:
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+Without them it falls back to per-instance in-memory limiting. Each function also hard-caps input length and `max_tokens` regardless.
+
 ## Original brand note
 
 Previously branded "Northbound" (remote IT + visa sponsorship). Now **The Career Architect**, general career services.
