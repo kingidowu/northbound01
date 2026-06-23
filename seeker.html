@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My account - The Career Architect</title>
+<meta name="description" content="Save jobs and track your applications on The Career Architect." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%230E1733'/%3E%3Cpath d='M11 30 L20 11 L29 30' fill='none' stroke='%2327C285' stroke-width='3.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3Cline x1='15' y1='23.5' x2='25' y2='23.5' stroke='%2327C285' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='10' r='2.4' fill='%23D99A28'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .auth-wrap{max-width:430px;margin:2.5rem auto 0}
+  .tabs{display:flex;gap:.5rem;margin-bottom:1.3rem}
+  .tabs button{flex:1;padding:.7rem;border:1px solid var(--line);background:var(--white);border-radius:10px;font:inherit;font-weight:600;cursor:pointer;color:var(--slate)}
+  .tabs button.on{border-color:var(--emerald);color:var(--ink);background:rgba(22,137,91,.06)}
+  .dash{display:grid;gap:1.4rem;margin-top:2rem}
+  .dash-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+  .card h2{font-size:1.2rem;margin-bottom:.3rem}
+  .card .card-sub{color:var(--slate);font-size:.9rem;margin-bottom:1.1rem}
+  .row{border:1px solid var(--line);border-radius:10px;padding:.85rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+  .row .t{font-family:"Space Grotesk";font-weight:600}
+  .row .s{font-size:.8rem;color:var(--slate);font-family:"Space Mono"}
+  .link-btn{background:none;border:none;color:#9B2C2C;font:inherit;cursor:pointer;font-size:.85rem;text-decoration:underline}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#0E1733"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg>
+      <span data-brand>The Career Architect</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="ats.html">Resume check</a>
+      <a href="jobs.html">Jobs</a>
+      <a href="seeker.html" class="active">My account</a>
+    </div>
+  </div>
+</nav>
+
+<main class="section">
+  <div class="wrap">
+    <div class="page-head">
+      <span class="eyebrow">Your account</span>
+      <h1>Saved jobs &amp; applications.</h1>
+      <p>Bookmark roles and track every application in one place.</p>
+    </div>
+
+    <div id="notConfigured" class="notice notice-warn hidden">
+      Not connected yet. Add Supabase keys in <code>config.js</code> and run <code>supabase/schema.sql</code>.
+    </div>
+
+    <section class="auth-wrap card" id="authCard">
+      <div class="tabs">
+        <button id="tabSignin" class="on" type="button">Sign in</button>
+        <button id="tabSignup" type="button">Create account</button>
+      </div>
+      <div class="field"><label>Email <span class="req">*</span></label><input type="email" id="email" autocomplete="email" /></div>
+      <div class="field"><label>Password <span class="req">*</span></label><input type="password" id="pass" autocomplete="current-password" minlength="6" placeholder="At least 6 characters" /></div>
+      <div id="authMsg" class="notice hidden"></div>
+      <button class="btn btn-accent" id="authBtn" type="button" style="width:100%">Sign in</button>
+    </section>
+
+    <section class="dash hidden" id="dash">
+      <div class="dash-head">
+        <strong id="whoami"></strong>
+        <button class="btn btn-ghost" id="signOut" type="button">Sign out</button>
+      </div>
+      <div class="card">
+        <h2>Saved jobs</h2>
+        <p class="card-sub">Roles you bookmarked from the <a href="jobs.html">job board</a>.</p>
+        <div class="grid" id="saved"><p class="muted">Loading…</p></div>
+      </div>
+      <div class="card">
+        <h2>My applications</h2>
+        <p class="card-sub">Everything you've applied to, and where it stands.</p>
+        <div class="grid" id="apps"><p class="muted">Loading…</p></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <a class="brand" href="index.html"><svg class="brand-mark" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#1C2748"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg><span data-brand style="color:var(--paper)">The Career Architect</span></a>
+    <small>Saved jobs &amp; application tracking</small>
+  </div>
+</footer>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function msg(el,t,k){ el.className="notice notice-"+k; el.textContent=t; el.classList.remove("hidden"); }
+
+let sb=null, user=null, mode="signin";
+if(SUPABASE_URL && SUPABASE_ANON_KEY){ sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+else { $("notConfigured").classList.remove("hidden"); $("authCard").classList.add("hidden"); }
+
+function setMode(m){ mode=m; $("tabSignin").classList.toggle("on",m==="signin"); $("tabSignup").classList.toggle("on",m==="signup"); $("authBtn").textContent=m==="signin"?"Sign in":"Create account"; $("authMsg").classList.add("hidden"); }
+$("tabSignin").onclick=()=>setMode("signin"); $("tabSignup").onclick=()=>setMode("signup");
+
+$("authBtn").onclick = async ()=>{
+  const email=$("email").value.trim(), password=$("pass").value;
+  if(!email || password.length<6){ msg($("authMsg"),"Enter an email and a 6+ character password.","err"); return; }
+  $("authBtn").disabled=true;
+  try{
+    if(mode==="signup"){
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if(error) throw error;
+      if(!data.session){ msg($("authMsg"),"Account created. Check your email to confirm, then sign in.","ok"); setMode("signin"); }
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+    }
+  }catch(e){ msg($("authMsg"), e.message || "Authentication failed.", "err"); }
+  $("authBtn").disabled=false;
+};
+$("signOut").onclick = async ()=>{ await sb.auth.signOut(); };
+
+async function loadSaved(){
+  const { data, error } = await sb.from("saved_jobs").select("job_id, created_at, jobs(id,title,company,location,apply_url,status)").order("created_at",{ascending:false});
+  const box=$("saved");
+  if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
+  const rows = (data||[]).filter(r=>r.jobs);
+  if(!rows.length){ box.innerHTML='<p class="muted">No saved jobs yet. Browse the <a href="jobs.html">job board</a> and tap Save.</p>'; return; }
+  box.innerHTML = rows.map(r=>`
+    <div class="row">
+      <div><div class="t">${esc(r.jobs.title)}</div><div class="s">${esc(r.jobs.company)}${r.jobs.location?" · "+esc(r.jobs.location):""}</div></div>
+      <div style="display:flex;gap:.6rem;align-items:center">
+        <a class="btn btn-accent" href="jobs.html" style="padding:.4rem .8rem;font-size:.82rem">View</a>
+        <button class="link-btn" data-unsave="${r.job_id}">Remove</button>
+      </div>
+    </div>`).join("");
+  box.querySelectorAll("[data-unsave]").forEach(b=>b.onclick=async ()=>{
+    await sb.from("saved_jobs").delete().eq("user_id",user.id).eq("job_id",b.dataset.unsave);
+    loadSaved();
+  });
+}
+
+async function loadApps(){
+  const { data, error } = await sb.from("applications").select("status, created_at, jobs(title,company)").eq("applicant_id",user.id).order("created_at",{ascending:false});
+  const box=$("apps");
+  if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
+  if(!data || !data.length){ box.innerHTML='<p class="muted">No applications yet. Apply from the <a href="jobs.html">job board</a> while signed in to track them here.</p>'; return; }
+  box.innerHTML = data.map(a=>`
+    <div class="row">
+      <div><div class="t">${esc(a.jobs?.title||"Role")}</div><div class="s">${esc(a.jobs?.company||"")}</div></div>
+      <div style="text-align:right"><span class="badge ${a.status==='contacted'?'badge-verified':'badge-soft'}">${esc(a.status)}</span><div class="s">${esc((a.created_at||"").slice(0,10))}</div></div>
+    </div>`).join("");
+}
+
+async function onSession(session){
+  user = session?.user || null;
+  if(user){
+    $("authCard").classList.add("hidden"); $("dash").classList.remove("hidden");
+    $("whoami").textContent = "Signed in as " + user.email;
+    loadSaved(); loadApps();
+  } else {
+    $("dash").classList.add("hidden");
+    if(SUPABASE_URL && SUPABASE_ANON_KEY) $("authCard").classList.remove("hidden");
+  }
+}
+if(sb){
+  const { data } = await sb.auth.getSession();
+  onSession(data.session);
+  sb.auth.onAuthStateChange((_e,s)=>onSession(s));
+}
+</script>
+</body>
+</html>

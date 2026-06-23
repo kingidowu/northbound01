@@ -48,6 +48,7 @@
       <a href="index.html">Home</a>
       <a href="ats.html">Resume check</a>
       <a href="jobs.html" class="active">Jobs</a>
+      <a href="seeker.html">My account</a>
       <a class="btn btn-ghost" href="agent.html">For recruiters</a>
     </div>
   </div>
@@ -145,7 +146,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 const results = document.getElementById("results");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
-let sb = null, all = [], matchMap = null;
+let sb = null, all = [], matchMap = null, user = null, savedSet = new Set();
 if (SUPABASE_URL && SUPABASE_ANON_KEY) {
   sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } else {
@@ -183,7 +184,12 @@ function card(j){
     <div class="job-meta">${meta}${visa}</div>
     ${reason}
     <p class="job-desc">${esc((j.description||"").slice(0,260))}${(j.description||"").length>260?"…":""}</p>
-    <div class="job-foot"><span class="sal">${esc(salary(j))}</span>${apply}</div>
+    <div class="job-foot"><span class="sal">${esc(salary(j))}</span>
+      <div style="display:flex;gap:1rem;align-items:center">
+        <button class="link-btn" data-save="${esc(j.id)}" style="text-decoration:none;color:${savedSet.has(String(j.id))?'var(--emerald)':'var(--slate)'}">${savedSet.has(String(j.id))?'♥ Saved':'♡ Save'}</button>
+        ${apply}
+      </div>
+    </div>
   </article>`;
 }
 
@@ -267,12 +273,21 @@ function openApply(id){
   $("applyDone").classList.add("hidden");
   $("applyMsg").classList.add("hidden");
   ["ap_name","ap_email","ap_phone","ap_resume","ap_note"].forEach(x=>$(x).value="");
+  if(user && user.email) $("ap_email").value = user.email;
   $("applyModal").classList.add("open");
 }
 function closeApply(){ $("applyModal").classList.remove("open"); }
-results.addEventListener("click", e=>{
-  const btn = e.target.closest("[data-apply]");
-  if(btn) openApply(btn.dataset.apply);
+results.addEventListener("click", async e=>{
+  const applyBtn = e.target.closest("[data-apply]");
+  if(applyBtn){ openApply(applyBtn.dataset.apply); return; }
+  const saveBtn = e.target.closest("[data-save]");
+  if(saveBtn){
+    if(!user){ if(confirm("Sign in to save jobs. Go to your account?")) location.href="seeker.html"; return; }
+    const id = saveBtn.dataset.save;
+    if(savedSet.has(String(id))){ await sb.from("saved_jobs").delete().eq("user_id",user.id).eq("job_id",id); savedSet.delete(String(id)); }
+    else { await sb.from("saved_jobs").insert({ user_id:user.id, job_id:id }); savedSet.add(String(id)); }
+    applyFilters();
+  }
 });
 $("applyClose").addEventListener("click", closeApply);
 $("applyModal").addEventListener("click", e=>{ if(e.target.id==="applyModal") closeApply(); });
@@ -287,6 +302,7 @@ $("applySubmit").addEventListener("click", async ()=>{
   $("applySubmit").disabled = true;
   const { error } = await sb.from("applications").insert({
     job_id: applyJobId,
+    applicant_id: user?.id || null,
     applicant_name: name,
     applicant_email: email,
     applicant_phone: $("ap_phone").value.trim() || null,
@@ -344,7 +360,21 @@ $("matchRun").addEventListener("click", async ()=>{
   btn.disabled = false; btn.textContent = o;
 });
 
-load();
+/* ---- seeker session: saved jobs + prefill ---- */
+async function refreshUser(){
+  if(!sb) return;
+  const { data } = await sb.auth.getSession();
+  user = data.session?.user || null;
+  savedSet = new Set();
+  if(user){
+    const { data: s } = await sb.from("saved_jobs").select("job_id");
+    (s||[]).forEach(r=>savedSet.add(String(r.job_id)));
+  }
+  if(all.length) applyFilters();
+}
+if(sb) sb.auth.onAuthStateChange(()=>refreshUser());
+
+load().then(refreshUser);
 </script>
 </body>
 </html>

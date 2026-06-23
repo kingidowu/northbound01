@@ -131,6 +131,22 @@ drop policy if exists "applications admin all" on public.applications;
 create policy "applications admin all" on public.applications for all
   using (public.is_admin()) with check (public.is_admin());
 
+-- ---------- Job-seeker: saved jobs + linked applications ----------
+-- Link logged-in applications back to the seeker so they can track status.
+alter table public.applications add column if not exists applicant_id uuid references auth.users(id) on delete set null;
+drop policy if exists "applications applicant read" on public.applications;
+create policy "applications applicant read" on public.applications for select using (auth.uid() = applicant_id);
+
+create table if not exists public.saved_jobs (
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  job_id      uuid not null references public.jobs(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  primary key (user_id, job_id)
+);
+alter table public.saved_jobs enable row level security;
+drop policy if exists "saved own" on public.saved_jobs;
+create policy "saved own" on public.saved_jobs for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- ---------- Assessment submissions (admin-visible) ----------
 create table if not exists public.assessments (
   id          uuid primary key default gen_random_uuid(),
