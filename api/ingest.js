@@ -12,9 +12,31 @@ export default async function handler(req, res) {
   try {
     const b = req.body && typeof req.body === "object" ? req.body : {};
     const access_token = b.access_token;
-    const text = (b.resume || "").toString().slice(0, 16000).trim();
     if (!access_token) { res.status(401).json({ error: "Sign in as admin." }); return; }
-    if (text.length < 80) { res.status(400).json({ error: "Paste a full resume (a few lines)." }); return; }
+
+    const text = (b.resume || "").toString().slice(0, 16000).trim();
+    const fileB64 = (b.file_base64 || "").toString();
+    const mediaType = (b.media_type || "").toString();
+    const IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+
+    // Build the model input: text, PDF document, or image.
+    let input, label = b.label || "Admin-added resume";
+    if (fileB64 && mediaType === "application/pdf") {
+      input = [
+        { type: "document", source: { type: "base64", media_type: "application/pdf", data: fileB64 } },
+        { type: "text", text: "This is a candidate resume. Extract structured career knowledge per the schema." },
+      ];
+    } else if (fileB64 && IMAGE_TYPES.includes(mediaType)) {
+      input = [
+        { type: "image", source: { type: "base64", media_type: mediaType, data: fileB64 } },
+        { type: "text", text: "This is a candidate resume (image). Read it and extract structured career knowledge per the schema." },
+      ];
+    } else if (text.length >= 80) {
+      input = text;
+    } else {
+      res.status(400).json({ error: "Paste a resume, or upload a PDF, Word, or image file." }); return;
+    }
+    if (fileB64.length > 11_000_000) { res.status(413).json({ error: "File too large (max ~8MB)." }); return; }
 
     const sb = getServiceClient();
     if (!sb) { res.status(500).json({ error: "Not configured" }); return; }
@@ -25,9 +47,9 @@ export default async function handler(req, res) {
     const { data: adminRow } = await sb.from("admins").select("id").eq("id", u.user.id).maybeSingle();
     if (!adminRow) { res.status(403).json({ error: "Admins only." }); return; }
 
-    const extraction = await ingest(sb, "resume", b.label || "Admin-added resume", text);
+    const extraction = await ingest(sb, "resume", label, input);
     if (!extraction) { res.status(502).json({ error: "Extraction failed." }); return; }
-    res.status(200).json({ ok: true, field: extraction.field, seniority: extraction.seniority, summary: extraction.summary });
+    res.status(200).json({ ok: true, extraction });
   } catch (e) {
     console.error("ingest failed:", e);
     res.status(502).json({ error: "Could not add to library." });

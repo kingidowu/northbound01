@@ -21,6 +21,13 @@
   .card .card-sub{color:var(--slate);font-size:.9rem;margin-bottom:1.1rem}
   .link-btn{background:none;border:none;color:#9B2C2C;font:inherit;cursor:pointer;font-size:.85rem;text-decoration:underline}
   .toggle{font:inherit;font-size:.82rem;font-weight:600;border:1px solid var(--line);background:var(--white);border-radius:8px;padding:.4rem .7rem;cursor:pointer}
+  .drop{border:1.5px dashed var(--line);border-radius:10px;padding:.8rem 1rem;font-size:.86rem;color:var(--slate);cursor:pointer;display:block;margin-bottom:.6rem}
+  .drop:hover{border-color:var(--emerald)}
+  .ext{margin-top:1.2rem;border:1px solid rgba(22,137,91,.3);background:rgba(22,137,91,.05);border-radius:12px;padding:1.1rem 1.2rem}
+  .ext h4{font-size:.72rem;font-family:"Space Mono";letter-spacing:.08em;text-transform:uppercase;color:var(--emerald);margin:.9rem 0 .4rem}
+  .ext h4:first-child{margin-top:0}
+  .ext .chips span{display:inline-block;background:var(--white);border:1px solid var(--line);border-radius:7px;padding:.2rem .5rem;font-size:.8rem;margin:.15rem .2rem .15rem 0;font-family:"Space Mono"}
+  .ext p{font-size:.92rem;color:var(--ink)}
 </style>
 </head>
 <body>
@@ -100,10 +107,12 @@
 
       <div class="card">
         <h2>Add resumes to the library</h2>
-        <p class="card-sub">Paste a resume to teach the AI directly. The more you add, the sharper the resume check, assessment, and job matching become.</p>
-        <div class="field"><textarea id="ingestText" placeholder="Paste a full resume here…" style="min-height:150px"></textarea></div>
+        <p class="card-sub">Upload a resume in any format (PDF, Word, image) or paste the text. The AI reads it, extracts the useful information, and stores it - making the resume check, assessment, and job matching sharper.</p>
+        <label class="drop"><span id="ingestDrop">📄 Upload PDF · Word (.docx) · image · TXT — or paste below</span><input type="file" id="ingestFile" accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg,.webp,.gif" style="display:none" /></label>
+        <div class="field"><textarea id="ingestText" placeholder="…or paste a full resume here" style="min-height:130px"></textarea></div>
         <div id="ingestMsg" class="notice hidden"></div>
         <button class="btn btn-ink" id="ingestBtn" type="button">Add to library</button>
+        <div id="ingestResult" class="hidden"></div>
       </div>
 
       <div class="card">
@@ -229,20 +238,67 @@ async function loadKnowledge(){
   }).join("");
 }
 
+const DROP_DEFAULT = "📄 Upload PDF · Word (.docx) · image · TXT — or paste below";
+let ingestFile = null; // { file_base64, media_type } for PDF/image
+function toB64(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=rej; r.readAsDataURL(file); }); }
+
+$("ingestFile").addEventListener("change", async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  ingestFile = null;
+  const name = f.name.toLowerCase();
+  $("ingestDrop").textContent = "Reading " + f.name + "…";
+  try{
+    if(f.type==="application/pdf" || name.endsWith(".pdf")){
+      ingestFile = { file_base64: await toB64(f), media_type:"application/pdf" };
+      $("ingestText").value=""; $("ingestDrop").textContent = "✓ " + f.name + " (PDF) ready — click Add to library";
+    } else if(/\.(png|jpe?g|webp|gif)$/.test(name) || (f.type||"").startsWith("image/")){
+      ingestFile = { file_base64: await toB64(f), media_type: f.type || "image/png" };
+      $("ingestText").value=""; $("ingestDrop").textContent = "✓ " + f.name + " (image) ready — click Add to library";
+    } else if(name.endsWith(".docx")){
+      const JSZip = (await import("https://esm.sh/jszip@3.10.1")).default;
+      const zip = await JSZip.loadAsync(await f.arrayBuffer());
+      const xml = await zip.file("word/document.xml").async("string");
+      $("ingestText").value = xml.replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+      $("ingestDrop").textContent = "✓ " + f.name + " (Word) — text extracted below";
+    } else {
+      $("ingestText").value = (await f.text()).trim();
+      $("ingestDrop").textContent = "✓ " + f.name + " loaded below";
+    }
+  }catch(err){ console.error(err); $("ingestDrop").textContent = "Couldn't read that file — paste the text instead"; }
+});
+
+function chips(arr){ return (arr||[]).map(x=>`<span>${esc(x)}</span>`).join("") || '<span style="opacity:.5">—</span>'; }
+function renderExtraction(e){
+  $("ingestResult").innerHTML = `<div class="ext">
+    <h4>What the AI extracted</h4>
+    <p><b>${esc(e.field||"?")}</b> · ${esc(e.seniority||"?")}</p>
+    ${e.summary?`<p style="color:var(--slate);margin-top:.4rem">${esc(e.summary)}</p>`:""}
+    <h4>Skills</h4><div class="chips">${chips(e.skills)}</div>
+    <h4>Target roles</h4><div class="chips">${chips(e.target_roles)}</div>
+    <h4>Common gaps</h4><div class="chips">${chips(e.common_gaps)}</div>
+    <h4>Keywords</h4><div class="chips">${chips(e.keywords)}</div>
+  </div>`;
+  $("ingestResult").classList.remove("hidden");
+}
+
 $("ingestBtn").onclick = async ()=>{
-  const text = $("ingestText").value.trim();
   const m = $("ingestMsg");
-  if(text.length < 80){ msg(m,"Paste a full resume first.","err"); return; }
+  const text = $("ingestText").value.trim();
+  if(!ingestFile && text.length < 80){ msg(m,"Upload a file or paste a resume first.","err"); return; }
   const { data: { session } } = await sb.auth.getSession();
   if(!session){ msg(m,"Session expired - sign in again.","err"); return; }
-  $("ingestBtn").disabled = true; const o = $("ingestBtn").textContent; $("ingestBtn").textContent = "Adding…";
+  $("ingestBtn").disabled = true; const o = $("ingestBtn").textContent; $("ingestBtn").textContent = "Reading & extracting…";
+  $("ingestResult").classList.add("hidden");
   try{
-    const res = await fetch("/api/ingest", { method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ resume: text, access_token: session.access_token }) });
+    const body = ingestFile
+      ? { ...ingestFile, access_token: session.access_token }
+      : { resume: text, access_token: session.access_token };
+    const res = await fetch("/api/ingest", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
     const d = await res.json();
     if(!res.ok) throw new Error(d.error || "Failed");
-    msg(m, `Added (${d.field||"?"} / ${d.seniority||"?"}). Library updated.`, "ok");
-    $("ingestText").value = "";
+    msg(m, "Added to the library.", "ok");
+    renderExtraction(d.extraction || {});
+    $("ingestText").value = ""; ingestFile = null; $("ingestFile").value = ""; $("ingestDrop").textContent = DROP_DEFAULT;
     loadKnowledge();
   }catch(e){ msg(m, e.message, "err"); }
   $("ingestBtn").disabled = false; $("ingestBtn").textContent = o;
