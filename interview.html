@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Interview prep - The Career Architect</title>
+<meta name="description" content="Free AI interview prep: role-specific mock questions with model answers and tips." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%230E1733'/%3E%3Cpath d='M11 30 L20 11 L29 30' fill='none' stroke='%2327C285' stroke-width='3.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3Cline x1='15' y1='23.5' x2='25' y2='23.5' stroke='%2327C285' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='10' r='2.4' fill='%23D99A28'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .q-row{display:grid;grid-template-columns:2fr 1fr auto;gap:.8rem;align-items:end;margin-top:2rem}
+  @media(max-width:680px){.q-row{grid-template-columns:1fr}}
+  .qa{border:1px solid var(--line);border-radius:12px;background:var(--white);margin-top:1rem;overflow:hidden}
+  .qa summary{cursor:pointer;list-style:none;padding:1.1rem 1.3rem;font-family:"Space Grotesk";font-weight:600;display:flex;justify-content:space-between;gap:1rem;align-items:center}
+  .qa summary::-webkit-details-marker{display:none}
+  .qa summary::after{content:"+";color:var(--emerald);font-family:"Space Mono";font-size:1.2rem}
+  .qa[open] summary::after{content:"–"}
+  .qa-body{padding:0 1.3rem 1.2rem}
+  .qa-why{font-size:.84rem;color:var(--slate);font-style:italic;margin-bottom:.7rem}
+  .qa-ans{font-size:.94rem;color:var(--ink);white-space:pre-wrap}
+  .spin{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--emerald);border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:.5rem}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .tips{margin-top:1.6rem}
+  .tips ul{padding-left:1.1rem;color:var(--slate)}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#0E1733"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg>
+      <span data-brand>The Career Architect</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="ats.html">Resume check</a>
+      <a href="interview.html" class="active">Interview prep</a>
+      <a href="jobs.html">Jobs</a>
+    </div>
+  </div>
+</nav>
+
+<main class="section">
+  <div class="wrap">
+    <div class="page-head">
+      <span class="eyebrow">Free AI tool</span>
+      <h1>Walk in ready.</h1>
+      <p>Enter the role you're interviewing for and get the questions you're most likely to face - with what each one is really testing and a strong sample answer.</p>
+    </div>
+
+    <div class="q-row">
+      <div class="field" style="margin:0"><label>Role you're interviewing for <span class="req">*</span></label><input type="text" id="role" placeholder="e.g. Senior Cloud Engineer" /></div>
+      <div class="field" style="margin:0"><label>Level</label>
+        <select id="level"><option value="">Any</option><option>Entry</option><option>Mid</option><option>Senior</option><option>Lead / Principal</option></select>
+      </div>
+      <button class="btn btn-accent" id="go" type="button">Get my prep</button>
+    </div>
+    <div class="field" style="margin-top:1rem"><label>Paste your resume <span class="muted">(optional - tailors the answers to you)</span></label><textarea id="resume" placeholder="Paste your resume…" style="min-height:120px"></textarea></div>
+    <div id="msg" class="notice hidden"></div>
+
+    <section id="out" style="display:none">
+      <div id="questions"></div>
+      <div class="tips card" id="tipsBox"></div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <a class="brand" href="index.html"><svg class="brand-mark" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#1C2748"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg><span data-brand style="color:var(--paper)">The Career Architect</span></a>
+    <small>Interview prep · Resume &amp; ATS · Verified jobs</small>
+  </div>
+</footer>
+
+<script type="module">
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function msg(t,k){ const m=$("msg"); m.className="notice notice-"+k; m.textContent=t; m.classList.remove("hidden"); }
+
+$("go").addEventListener("click", async ()=>{
+  $("msg").classList.add("hidden");
+  const role = $("role").value.trim();
+  if(!role){ msg("Enter the role you're interviewing for.","err"); return; }
+  const btn=$("go"), o=btn.textContent; btn.disabled=true; btn.innerHTML='<span class="spin"></span>Building…';
+  $("out").style.display="none";
+  try{
+    const res = await fetch("/api/interview",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ role, level:$("level").value, resume:$("resume").value.trim() })});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error||"Failed");
+    $("questions").innerHTML = (d.questions||[]).map((q,i)=>`
+      <details class="qa"${i===0?" open":""}>
+        <summary>${esc(q.question)}</summary>
+        <div class="qa-body">
+          <div class="qa-why">Why they ask: ${esc(q.why_asked)}</div>
+          <div class="qa-ans">${esc(q.sample_answer)}</div>
+        </div>
+      </details>`).join("");
+    $("tipsBox").innerHTML = `<h3 style="font-size:1.05rem;margin-bottom:.6rem">Prep tips</h3><ul>${(d.tips||[]).map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`;
+    $("out").style.display="block";
+    $("out").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){ msg(e.message,"err"); }
+  btn.disabled=false; btn.textContent=o;
+});
+</script>
+</body>
+</html>

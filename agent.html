@@ -139,6 +139,7 @@
         <div class="field"><label>Application link</label><input type="text" id="j_apply_url" placeholder="https:// where candidates apply" /></div>
         <div id="jobMsg" class="notice hidden"></div>
         <button class="btn btn-accent" id="postJob" type="button">Publish listing</button>
+        <button class="btn btn-ghost" id="cancelEdit" type="button" style="display:none;margin-left:.6rem">Cancel edit</button>
       </div>
 
       <!-- my listings -->
@@ -249,7 +250,26 @@ $("saveProfile").onclick = async ()=>{
   $("saveProfile").disabled = false;
 };
 
-/* ---- post a job ---- */
+/* ---- post / edit a job ---- */
+let editingId = null;
+let myJobs = [];
+const JF = ["j_title","j_company","j_location","j_work_mode","j_category","j_employment_type","j_experience","j_salary_currency","j_salary_min","j_salary_max","j_description","j_apply_url"];
+function clearJob(){
+  JF.forEach(id=>$(id).value = id==="j_salary_currency" ? "USD" : "");
+  $("j_visa").checked = false;
+  editingId = null; $("postJob").textContent = "Publish listing"; $("cancelEdit").style.display = "none";
+}
+function fillJob(j){
+  $("j_title").value=j.title||""; $("j_company").value=j.company||""; $("j_location").value=j.location||"";
+  $("j_work_mode").value=j.work_mode||""; $("j_category").value=j.category||""; $("j_employment_type").value=j.employment_type||"";
+  $("j_experience").value=j.experience||""; $("j_salary_currency").value=j.salary_currency||"USD";
+  $("j_salary_min").value=j.salary_min||""; $("j_salary_max").value=j.salary_max||"";
+  $("j_description").value=j.description||""; $("j_apply_url").value=j.apply_url||""; $("j_visa").checked=!!j.visa_sponsorship;
+  editingId = j.id; $("postJob").textContent = "Save changes"; $("cancelEdit").style.display = "";
+  $("j_title").scrollIntoView({behavior:"smooth",block:"center"});
+}
+$("cancelEdit").onclick = ()=>{ clearJob(); $("jobMsg").classList.add("hidden"); };
+
 $("postJob").onclick = async ()=>{
   const title = $("j_title").value.trim();
   const company = $("j_company").value.trim();
@@ -258,8 +278,7 @@ $("postJob").onclick = async ()=>{
   $("postJob").disabled = true;
   const num = v => v ? parseInt(v,10) : null;
   const row = {
-    agent_id: user.id,
-    title, company, description,
+    agent_id: user.id, title, company, description,
     location: $("j_location").value.trim() || null,
     work_mode: $("j_work_mode").value || null,
     category: $("j_category").value || null,
@@ -272,12 +291,13 @@ $("postJob").onclick = async ()=>{
     apply_url: $("j_apply_url").value.trim() || null,
     status: "published",
   };
-  const { error } = await sb.from("jobs").insert(row);
+  const { error } = editingId
+    ? await sb.from("jobs").update(row).eq("id", editingId)
+    : await sb.from("jobs").insert(row);
   if(error){ msg($("jobMsg"), error.message, "err"); }
   else {
-    msg($("jobMsg"), "Listing published. It's live on the job board.", "ok");
-    ["j_title","j_company","j_location","j_salary_min","j_salary_max","j_description","j_apply_url"].forEach(id=>$(id).value="");
-    $("j_visa").checked = false;
+    msg($("jobMsg"), editingId ? "Listing updated." : "Listing published. It's live on the job board.", "ok");
+    clearJob();
     loadMyJobs();
   }
   $("postJob").disabled = false;
@@ -288,15 +308,20 @@ async function loadMyJobs(){
   const { data, error } = await sb.from("jobs").select("*").eq("agent_id", user.id).order("created_at",{ascending:false});
   const box = $("myJobs");
   if(error){ box.innerHTML = `<p class="muted">${esc(error.message)}</p>`; return; }
-  if(!data.length){ box.innerHTML = '<p class="muted">No listings yet - post your first above.</p>'; return; }
-  box.innerHTML = data.map(j=>`
+  myJobs = data || [];
+  if(!myJobs.length){ box.innerHTML = '<p class="muted">No listings yet - post your first above.</p>'; return; }
+  box.innerHTML = myJobs.map(j=>`
     <div class="my-job">
       <div>
         <div class="t">${esc(j.title)}</div>
         <div class="s">${esc(j.company)} · ${esc(j.status)} · ${esc(j.work_mode||"-")}</div>
       </div>
-      <div class="row-actions"><button class="link-btn" data-del="${j.id}">Delete</button></div>
+      <div class="row-actions">
+        <button class="link-btn" style="color:var(--emerald)" data-edit="${j.id}">Edit</button>
+        <button class="link-btn" data-del="${j.id}">Delete</button>
+      </div>
     </div>`).join("");
+  box.querySelectorAll("[data-edit]").forEach(b=>b.onclick = ()=>{ const j = myJobs.find(x=>x.id===b.dataset.edit); if(j) fillJob(j); });
   box.querySelectorAll("[data-del]").forEach(b=>b.onclick = async ()=>{
     if(!confirm("Delete this listing?")) return;
     const { error } = await sb.from("jobs").delete().eq("id", b.dataset.del);
@@ -315,16 +340,25 @@ async function loadApplicants(){
   box.innerHTML = data.map(a=>`
     <div class="my-job" style="align-items:flex-start">
       <div>
-        <div class="t">${esc(a.applicant_name)} <span class="badge badge-soft">${esc(a.status)}</span></div>
+        <div class="t">${esc(a.applicant_name)}</div>
         <div class="s">${esc(a.jobs?.title || "Role")} · ${esc(a.applicant_email)}${a.applicant_phone?" · "+esc(a.applicant_phone):""}</div>
         ${a.cover_note?`<div class="s" style="margin-top:.3rem;font-family:inherit;color:var(--ink)">${esc(a.cover_note.slice(0,200))}</div>`:""}
         ${a.resume_text?`<button class="link-btn" style="color:var(--emerald)" data-resume="${a.id}">View resume</button>`:""}
       </div>
-      <div class="s">${esc((a.created_at||"").slice(0,10))}</div>
+      <div style="text-align:right">
+        <select class="statusSel" data-id="${a.id}" style="font:inherit;font-size:.8rem;border:1px solid var(--line);border-radius:7px;padding:.3rem .5rem;background:var(--white)">
+          ${["new","reviewed","contacted","rejected"].map(s=>`<option ${a.status===s?"selected":""}>${s}</option>`).join("")}
+        </select>
+        <div class="s" style="margin-top:.3rem">${esc((a.created_at||"").slice(0,10))}</div>
+      </div>
     </div>`).join("");
   box.querySelectorAll("[data-resume]").forEach(b=>b.onclick=()=>{
     const a = data.find(x=>x.id===b.dataset.resume);
     if(a) alert(a.resume_text);
+  });
+  box.querySelectorAll(".statusSel").forEach(sel=>sel.onchange=async ()=>{
+    const { error } = await sb.from("applications").update({ status: sel.value }).eq("id", sel.dataset.id);
+    if(error){ alert(error.message); } else { sel.style.borderColor = "var(--emerald)"; }
   });
 }
 

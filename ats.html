@@ -43,6 +43,7 @@
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="ats.html" class="active">Resume check</a>
+      <a href="interview.html">Interview prep</a>
       <a href="jobs.html">Jobs</a>
       <a class="btn btn-ghost" href="agent.html">For recruiters</a>
     </div>
@@ -89,6 +90,13 @@
           <div class="res-block"><h3>Formatting flags</h3><ul id="formatting"></ul></div>
         </div>
         <div class="res-block" style="margin-top:1.4rem"><h3>Rewrite suggestions</h3><ul id="tips"></ul></div>
+        <hr style="border:none;border-top:1px solid var(--line);margin:1.5rem 0">
+        <button class="btn btn-ink" id="rewriteBtn" type="button">✨ Rewrite my resume with AI</button>
+        <div id="rewriteOut" class="hidden" style="margin-top:1.3rem">
+          <div class="res-block"><h3>Key changes</h3><ul id="rwChanges"></ul></div>
+          <label style="display:block;font-weight:600;font-size:.9rem;margin:1rem 0 .4rem;overflow:hidden">Rewritten resume <button type="button" id="rwCopy" class="btn btn-ghost" style="padding:.3rem .7rem;font-size:.8rem;float:right">Copy</button></label>
+          <textarea id="rwText" style="width:100%;min-height:340px;padding:.9rem;border:1px solid var(--line);border-radius:10px;font-family:monospace;font-size:.85rem;background:var(--paper)"></textarea>
+        </div>
         <p class="muted" style="font-size:.82rem;margin-top:1.4rem">An AI estimate to guide your edits - not a guarantee of any specific ATS result. Want a human to take it further? <a href="index.html#assessment" style="color:var(--emerald)">Start your assessment</a>.</p>
       </div>
     </section>
@@ -170,6 +178,28 @@ $("analyze").addEventListener("click", async ()=>{
   }
   $("analyze").disabled = false;
   $("analyze").textContent = "Check my resume";
+});
+
+/* ---- AI resume rewriter ---- */
+$("rewriteBtn").addEventListener("click", async ()=>{
+  const resume = $("resume").value.trim();
+  if(resume.length < 80){ msg("Paste your resume first.","err"); return; }
+  const btn=$("rewriteBtn"), o=btn.textContent; btn.disabled=true; btn.innerHTML='<span class="spin"></span>Rewriting…';
+  try{
+    const res = await fetch("/api/rewrite",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ resume, jobDescription:$("jd").value.trim() })});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error||"Failed");
+    $("rwChanges").innerHTML = (d.changes||[]).map(c=>`<li>${esc(c)}</li>`).join("");
+    $("rwText").value = d.improved_resume || "";
+    $("rewriteOut").classList.remove("hidden");
+    $("rewriteOut").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){ msg(e.message,"err"); }
+  btn.disabled=false; btn.textContent=o;
+});
+$("rwCopy").addEventListener("click", ()=>{
+  $("rwText").select(); navigator.clipboard.writeText($("rwText").value);
+  $("rwCopy").textContent="Copied ✓"; setTimeout(()=>$("rwCopy").textContent="Copy",1500);
 });
 </script>
 </body>
