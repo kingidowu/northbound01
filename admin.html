@@ -94,6 +94,12 @@
       </div>
 
       <div class="card">
+        <h2>Revenue <span class="badge badge-verified" id="revTotal"></span></h2>
+        <p class="card-sub">Completed Stripe purchases.</p>
+        <div class="grid" id="purchases"><p class="muted">Loading…</p></div>
+      </div>
+
+      <div class="card">
         <h2>Applications <span class="badge badge-soft" id="appCount"></span></h2>
         <p class="card-sub">Every job application across all recruiters.</p>
         <div class="grid" id="applications"><p class="muted">Loading…</p></div>
@@ -194,6 +200,20 @@ async function loadJobs(){
     const { error } = await sb.from("jobs").delete().eq("id", b.dataset.del);
     if(error) alert(error.message); else loadJobs();
   });
+}
+
+async function loadPurchases(){
+  const { data, error } = await sb.from("purchases").select("*").order("created_at",{ascending:false}).limit(200);
+  const box=$("purchases");
+  if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
+  if(!data || !data.length){ box.innerHTML='<p class="muted">No purchases yet.</p>'; $("revTotal").textContent="$0"; return; }
+  const total = data.reduce((s,p)=> s + (Number(p.amount)||0), 0);
+  $("revTotal").textContent = "$" + total.toFixed(2);
+  box.innerHTML = data.map(p=>`
+    <div class="row">
+      <div><div class="t">${esc(p.plan||"—")} <span class="badge badge-soft">${esc(p.status||"")}</span></div><div class="s">${esc(p.email||"")}</div></div>
+      <div style="text-align:right"><div class="t">${esc(p.currency||"USD")} ${Number(p.amount||0).toFixed(2)}</div><div class="s">${esc((p.created_at||"").slice(0,10))}</div></div>
+    </div>`).join("");
 }
 
 async function loadApplications(){
@@ -316,7 +336,7 @@ async function onSession(session){
     $("notAdmin").classList.add("hidden");
     $("dash").classList.remove("hidden");
     $("whoami").textContent = "Admin · " + user.email;
-    loadRecruiters(); loadJobs(); loadApplications(); loadAssessments(); loadKnowledge();
+    loadRecruiters(); loadJobs(); loadPurchases(); loadApplications(); loadAssessments(); loadKnowledge();
   } else {
     $("dash").classList.add("hidden");
     $("myEmail").textContent = user.email;

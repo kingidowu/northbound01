@@ -192,6 +192,22 @@ alter table public.knowledge_library enable row level security;
 drop policy if exists "knowledge admin read" on public.knowledge_library;
 create policy "knowledge admin read" on public.knowledge_library for select using (public.is_admin());
 
+-- ---------- Purchases (Stripe, admin-visible) ----------
+create table if not exists public.purchases (
+  id                 uuid primary key default gen_random_uuid(),
+  email              text,
+  plan               text,
+  amount             numeric,
+  currency           text,
+  stripe_session_id  text unique,
+  status             text,
+  created_at         timestamptz not null default now()
+);
+alter table public.purchases enable row level security;
+drop policy if exists "purchases admin read" on public.purchases;
+create policy "purchases admin read" on public.purchases for select using (public.is_admin());
+-- (inserts come from the Stripe webhook via the service role, which bypasses RLS)
+
 -- ---------- Bootstrap your first admin ----------
 -- After you sign up (via admin.html or agent.html), run THIS with your email to
 -- grant yourself admin (run it as the postgres role in the SQL editor):
