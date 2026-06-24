@@ -405,13 +405,15 @@ function webCard(j){
     <div class="job-foot"><span class="sal">${esc(salary(j))}</span>${j.apply_url?`<a class="btn btn-accent" href="${esc(j.apply_url)}" target="_blank" rel="noopener">Apply on source</a>`:""}</div>
   </article>`;
 }
+// Keep queries short - Adzuna requires ALL keywords (AND), and the server
+// appends "remote", so 1-2 core words per focus returns the most matches.
 const FOCUS = [
-  { key:"software",   label:"Software",       what:"software engineer developer" },
-  { key:"cloud",      label:"Cloud / DevOps", what:"cloud engineer devops kubernetes aws" },
-  { key:"data",       label:"Data / AI",      what:"data engineer machine learning analytics" },
-  { key:"cyber",      label:"Cybersecurity",  what:"cybersecurity security engineer" },
-  { key:"healthcare", label:"Healthcare",     what:"registered nurse healthcare clinical" },
-  { key:"it",         label:"IT Support",     what:"IT support systems administrator helpdesk" },
+  { key:"software",   label:"Software",       what:"software engineer" },
+  { key:"cloud",      label:"Cloud / DevOps", what:"cloud engineer" },
+  { key:"data",       label:"Data / AI",      what:"data engineer" },
+  { key:"cyber",      label:"Cybersecurity",  what:"cybersecurity" },
+  { key:"healthcare", label:"Healthcare",     what:"nurse" },
+  { key:"it",         label:"IT Support",     what:"IT support" },
 ];
 let webFocus = localStorage.getItem("ca_web_focus") || "cloud";
 function renderFocusChips(){
