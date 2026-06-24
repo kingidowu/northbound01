@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/job/:id", "destination": "/api/job?id=:id" }
+  ]
+}
