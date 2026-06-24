@@ -1,4 +1,26 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { rateLimit } from "../lib/ratelimit.js";
+
+const ai = new Anthropic();
+
+// Keep only jobs relevant to the platform's focus (IT/software/cloud/data/cyber/healthcare).
+async function filterRelevant(jobs) {
+  if (!process.env.ANTHROPIC_API_KEY || !jobs.length) return jobs;
+  try {
+    const list = jobs.map((j, i) => `[${i}] ${j.title} — ${(j.description || "").slice(0, 100)}`).join("\n");
+    const msg = await ai.messages.create({
+      model: "claude-haiku-4-5",
+      max_tokens: 400,
+      output_config: { format: { type: "json_schema", schema: { type: "object", properties: { keep: { type: "array", items: { type: "integer" } } }, required: ["keep"], additionalProperties: false } } },
+      system: "You curate a careers platform focused on IT, software, cloud/DevOps, data/AI, cybersecurity, and healthcare roles across the US and Canada. Return the indices of jobs that genuinely fit that focus; drop unrelated roles.",
+      messages: [{ role: "user", content: `Jobs:\n${list}\n\nReturn the indices to keep.` }],
+    });
+    const t = msg.content.find((b) => b.type === "text")?.text || "{}";
+    const keep = new Set(JSON.parse(t).keep || []);
+    const filtered = jobs.filter((_, i) => keep.has(i));
+    return filtered.length ? filtered : jobs;
+  } catch (e) { console.error("relevance filter failed:", e); return jobs; }
+}
 
 // Pulls live job listings from Adzuna (free API). Keys are server-side env vars.
 // Sign up at https://developer.adzuna.com -> ADZUNA_APP_ID + ADZUNA_APP_KEY.
@@ -46,7 +68,8 @@ export default async function handler(req, res) {
       created_at: j.created || null,
     }));
 
-    res.status(200).json({ jobs, configured: true, count: jobs.length });
+    const out = q.relevance ? await filterRelevant(jobs) : jobs;
+    res.status(200).json({ jobs: out, configured: true, count: out.length });
   } catch (e) {
     console.error("external-jobs failed:", e);
     res.status(502).json({ error: "Could not load web jobs", jobs: [] });

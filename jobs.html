@@ -35,6 +35,9 @@
   .match-bar{margin-top:2rem;border:1px solid var(--line);border-radius:14px;padding:1.1rem 1.3rem;background:var(--white)}
   .match-badge{font-family:"Space Grotesk";font-weight:700;font-size:.78rem;padding:.25rem .55rem;border-radius:8px;color:#fff}
   .match-reason{font-size:.86rem;color:var(--slate);font-style:italic;margin-top:.2rem}
+  .web-focus{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
+  .fchip{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--white);border-radius:999px;padding:.4rem .9rem;cursor:pointer;color:var(--slate)}
+  .fchip.on{border-color:var(--emerald);color:var(--ink);background:rgba(22,137,91,.08);font-weight:600}
 </style>
 </head>
 <body>
@@ -105,9 +108,10 @@
         </div>
         <div style="display:flex;gap:.5rem;align-items:center">
           <select id="webCountry" style="font:inherit;border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;background:var(--paper)"><option value="us">United States</option><option value="ca">Canada</option></select>
-          <button class="btn btn-ink" id="webBtn" type="button">🌐 Load web jobs</button>
+          <button class="btn btn-ghost" id="webBtn" type="button">↻ Refresh</button>
         </div>
       </div>
+      <div class="web-focus" id="webFocus"></div>
       <div class="results" id="webResults" style="margin-top:1.2rem"></div>
     </div>
   </div>
@@ -401,21 +405,39 @@ function webCard(j){
     <div class="job-foot"><span class="sal">${esc(salary(j))}</span>${j.apply_url?`<a class="btn btn-accent" href="${esc(j.apply_url)}" target="_blank" rel="noopener">Apply on source</a>`:""}</div>
   </article>`;
 }
-$("webBtn").addEventListener("click", async ()=>{
-  const btn=$("webBtn"), o=btn.textContent; btn.disabled=true; btn.textContent="Loading…";
-  $("webResults").innerHTML='<div class="empty">Fetching live roles…</div>';
+const FOCUS = [
+  { key:"software",   label:"Software",       what:"software engineer developer" },
+  { key:"cloud",      label:"Cloud / DevOps", what:"cloud engineer devops kubernetes aws" },
+  { key:"data",       label:"Data / AI",      what:"data engineer machine learning analytics" },
+  { key:"cyber",      label:"Cybersecurity",  what:"cybersecurity security engineer" },
+  { key:"healthcare", label:"Healthcare",     what:"registered nurse healthcare clinical" },
+  { key:"it",         label:"IT Support",     what:"IT support systems administrator helpdesk" },
+];
+let webFocus = localStorage.getItem("ca_web_focus") || "cloud";
+function renderFocusChips(){
+  $("webFocus").innerHTML = FOCUS.map(f=>`<button class="fchip ${f.key===webFocus?'on':''}" data-focus="${f.key}">${esc(f.label)}</button>`).join("");
+  $("webFocus").querySelectorAll("[data-focus]").forEach(b=>b.onclick=()=>{ webFocus=b.dataset.focus; localStorage.setItem("ca_web_focus",webFocus); renderFocusChips(); loadWeb(); });
+}
+async function loadWeb(){
+  const f = FOCUS.find(x=>x.key===webFocus) || FOCUS[0];
+  const country = $("webCountry").value; localStorage.setItem("ca_web_country", country);
+  const q = $("q").value.trim();
+  $("webResults").innerHTML='<div class="empty">Curating live roles…</div>';
   try{
     const res = await fetch("/api/external-jobs",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ what: $("q").value.trim() || $("category").value || "", country: $("webCountry").value })});
+      body:JSON.stringify({ what: q || f.what, country, relevance:true })});
     const d = await res.json();
-    if(d.configured===false){ $("webResults").innerHTML='<div class="empty">Web jobs aren\'t connected yet (add an Adzuna API key).</div>'; }
-    else if(!d.jobs || !d.jobs.length){ $("webResults").innerHTML='<div class="empty">No web roles found - try a different search term above.</div>'; }
+    if(d.configured===false){ $("webResults").innerHTML='<div class="empty">Web jobs aren\'t connected yet.</div>'; }
+    else if(!d.jobs || !d.jobs.length){ $("webResults").innerHTML='<div class="empty">No matching web roles - try another focus.</div>'; }
     else { $("webResults").innerHTML = d.jobs.map(webCard).join(""); }
   }catch(e){ $("webResults").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
-  btn.disabled=false; btn.textContent=o;
-});
+}
+$("webCountry").value = localStorage.getItem("ca_web_country") || "us";
+$("webCountry").addEventListener("change", loadWeb);
+$("webBtn").addEventListener("click", loadWeb);
+renderFocusChips();
 
-load().then(refreshUser);
+load().then(refreshUser).then(loadWeb);
 </script>
 </body>
 </html>
