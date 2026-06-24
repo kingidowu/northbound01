@@ -38,13 +38,15 @@ export default async function handler(req, res) {
     const what = (q.what || "").toString().slice(0, 120).trim();
     const where = (q.where || "").toString().slice(0, 120).trim();
     const country = ["us", "ca", "gb"].includes((q.country || "").toString()) ? q.country : "us";
+    const remote = q.remote !== false && q.remote !== "false"; // default to remote-only
 
+    const whatQ = remote ? (what ? what + " remote" : "remote") : what;
     const url = new URL(`https://api.adzuna.com/v1/api/jobs/${country}/search/1`);
     url.searchParams.set("app_id", APP_ID);
     url.searchParams.set("app_key", APP_KEY);
-    url.searchParams.set("results_per_page", "20");
+    url.searchParams.set("results_per_page", "30");
     url.searchParams.set("content-type", "application/json");
-    if (what) url.searchParams.set("what", what);
+    if (whatQ) url.searchParams.set("what", whatQ);
     if (where) url.searchParams.set("where", where);
 
     const r = await fetch(url);
@@ -68,7 +70,11 @@ export default async function handler(req, res) {
       created_at: j.created || null,
     }));
 
-    const out = q.relevance ? await filterRelevant(jobs) : jobs;
+    // Keep only genuinely-remote roles.
+    let out = remote
+      ? jobs.filter((j) => /\b(remote|work[ -]?from[ -]?home|wfh|telecommut|fully distributed)\b/i.test(j.title + " " + j.description)).map((j) => ({ ...j, work_mode: "Remote" }))
+      : jobs;
+    if (q.relevance) out = await filterRelevant(out);
     res.status(200).json({ jobs: out, configured: true, count: out.length });
   } catch (e) {
     console.error("external-jobs failed:", e);
