@@ -3,4 +3,20 @@ Allow: /
 Disallow: /admin.html
 Disallow: /api/
 
+# AI answer engines - explicitly welcomed so your pages can be cited
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
 Sitemap: https://thecareerarchitect.org/sitemap.xml
