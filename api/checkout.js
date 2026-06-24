@@ -27,6 +27,7 @@ export default async function handler(req, res) {
     const plan = PLANS[(b.plan || "").toString()];
     if (!plan) { res.status(400).json({ error: "Unknown plan" }); return; }
     const email = (b.email || "").toString().slice(0, 200).trim();
+    const userId = (b.user_id || "").toString().slice(0, 100).trim();
 
     const p = new URLSearchParams();
     p.set("mode", plan.mode);
@@ -39,7 +40,9 @@ export default async function handler(req, res) {
     p.append("line_items[0][price_data][unit_amount]", String(plan.amount));
     if (plan.mode === "subscription") p.append("line_items[0][price_data][recurring][interval]", plan.interval);
     if (email) p.set("customer_email", email);
+    if (userId) p.set("client_reference_id", userId);
     p.set("metadata[plan]", b.plan);
+    if (userId) p.set("metadata[user_id]", userId);
 
     const r = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",

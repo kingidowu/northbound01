@@ -208,6 +208,38 @@ drop policy if exists "purchases admin read" on public.purchases;
 create policy "purchases admin read" on public.purchases for select using (public.is_admin());
 -- (inserts come from the Stripe webhook via the service role, which bypasses RLS)
 
+-- ---------- Memberships (entitlement: who has Pro/Coaching) ----------
+-- One row per user. Written by the Stripe webhook (service role). The app reads
+-- its own row to unlock Pro features.
+create table if not exists public.memberships (
+  user_id            uuid primary key references auth.users(id) on delete cascade,
+  email              text,
+  plan               text not null default 'free',   -- free | pro | coaching
+  status             text not null default 'active',  -- active | canceled | past_due
+  stripe_customer_id text,
+  current_period_end timestamptz,
+  updated_at         timestamptz not null default now()
+);
+alter table public.memberships enable row level security;
+drop policy if exists "memberships own read" on public.memberships;
+drop policy if exists "memberships admin read" on public.memberships;
+create policy "memberships own read"   on public.memberships for select using (auth.uid() = user_id);
+create policy "memberships admin read" on public.memberships for select using (public.is_admin());
+-- (inserts/updates come from the Stripe webhook via the service role, which bypasses RLS)
+
+-- Monthly AI usage counter, for enforcing free-tier limits server-side.
+create table if not exists public.ai_usage (
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  month       text not null,            -- 'YYYY-MM'
+  feature     text not null,            -- tailor | interview | rewrite
+  count       integer not null default 0,
+  primary key (user_id, month, feature)
+);
+alter table public.ai_usage enable row level security;
+drop policy if exists "ai_usage own read" on public.ai_usage;
+create policy "ai_usage own read" on public.ai_usage for select using (auth.uid() = user_id);
+-- (writes come from the server via the service role)
+
 -- ---------- Bootstrap your first admin ----------
 -- After you sign up (via admin.html or agent.html), run THIS with your email to
 -- grant yourself admin (run it as the postgres role in the SQL editor):

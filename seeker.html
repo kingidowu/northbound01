@@ -69,6 +69,11 @@
         <strong id="whoami"></strong>
         <button class="btn btn-ghost" id="signOut" type="button">Sign out</button>
       </div>
+      <div class="card" id="planCard">
+        <h2>Your plan <span class="badge badge-soft" id="planBadge">Free</span></h2>
+        <p class="card-sub" id="planSub">You're on the free plan. Upgrade to Pro for unlimited AI résumé tailoring and interview prep.</p>
+        <a class="btn btn-accent" href="pricing.html" id="planCta">See plans</a>
+      </div>
       <div class="card">
         <h2>Saved jobs</h2>
         <p class="card-sub">Roles you bookmarked from the <a href="jobs.html">job board</a>.</p>
@@ -174,12 +179,25 @@ async function loadTailored(){
   box.querySelectorAll("[data-del]").forEach(b=>b.onclick=async ()=>{ if(!confirm("Delete this tailored résumé?"))return; await sb.from("tailored_resumes").delete().eq("id",b.dataset.del); loadTailored(); });
 }
 
+async function loadPlan(){
+  try{
+    const { data:m } = await sb.from("memberships").select("plan,status,current_period_end").eq("user_id", user.id).maybeSingle();
+    const active = m && m.status==="active" && (m.plan==="pro"||m.plan==="coaching");
+    if(active){
+      const name = m.plan==="pro" ? "Pro" : "Coaching";
+      $("planBadge").textContent = name; $("planBadge").className = "badge badge-verified";
+      $("planSub").textContent = `You're on the ${name} plan. Unlimited AI résumé tailoring and interview prep are unlocked.`;
+      $("planCta").textContent = "Manage plan";
+    }
+  }catch(e){}
+}
+
 async function onSession(session){
   user = session?.user || null;
   if(user){
     $("authCard").classList.add("hidden"); $("dash").classList.remove("hidden");
     $("whoami").textContent = "Signed in as " + user.email;
-    loadSaved(); loadApps(); loadTailored();
+    loadSaved(); loadApps(); loadTailored(); loadPlan();
   } else {
     $("dash").classList.add("hidden");
     if(SUPABASE_URL && SUPABASE_ANON_KEY) $("authCard").classList.remove("hidden");

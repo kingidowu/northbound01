@@ -54,12 +54,23 @@ export default async function handler(req, res) {
       const amount = (s.amount_total || 0) / 100;
       const currency = (s.currency || "usd").toUpperCase();
 
+      const userId = s.client_reference_id || s.metadata?.user_id || null;
+      const tier = plan.startsWith("pro") ? "pro" : plan.startsWith("coaching") ? "coaching" : null;
+
       const sb = getServiceClient();
       if (sb) {
         await sb.from("purchases").upsert(
           { email, plan, amount, currency, stripe_session_id: s.id, status: s.payment_status || "paid" },
           { onConflict: "stripe_session_id" }
         ).then(() => {}, (e) => console.error("purchase insert:", e));
+
+        // Unlock membership for subscription plans tied to a logged-in account.
+        if (userId && tier) {
+          await sb.from("memberships").upsert(
+            { user_id: userId, email, plan: tier, status: "active", stripe_customer_id: s.customer || null, updated_at: new Date().toISOString() },
+            { onConflict: "user_id" }
+          ).then(() => {}, (e) => console.error("membership upsert:", e));
+        }
       }
       await sendReceipt(email, plan, amount, currency);
     }

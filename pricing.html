@@ -167,7 +167,8 @@
   async function checkout(plan, btn){
     const orig = btn.textContent; btn.textContent = "Loading…"; btn.style.pointerEvents = "none";
     try{
-      const res = await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan})});
+      const u = window.__caUser || {};
+      const res = await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan, user_id:u.id||"", email:u.email||""})});
       const d = await res.json();
       if(res.status===503){ alert("Online billing isn't switched on yet. Create your free account and we'll get you set up."); location.href="seeker.html"; return; }
       if(!res.ok) throw new Error(d.error||"Checkout error");
@@ -185,6 +186,28 @@
   const sp = new URLSearchParams(location.search);
   if(sp.get("success")) { const n=document.createElement("div"); n.className="notice notice-ok"; n.style.maxWidth="600px"; n.style.margin="1.5rem auto 0"; n.textContent="✓ Payment received - thank you! Check your email for confirmation."; document.querySelector(".wrap").prepend(n); }
   if(sp.get("canceled")) { const n=document.createElement("div"); n.className="notice notice-warn"; n.style.maxWidth="600px"; n.style.margin="1.5rem auto 0"; n.textContent="Checkout canceled - no charge made."; document.querySelector(".wrap").prepend(n); }
+</script>
+<script type="module">
+  // Make checkout account-aware + show current plan if signed in.
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data:{ session } } = await sb.auth.getSession();
+    if (session?.user) {
+      window.__caUser = { id: session.user.id, email: session.user.email };
+      try {
+        const { data: m } = await sb.from("memberships").select("plan,status").eq("user_id", session.user.id).maybeSingle();
+        if (m && m.status === "active" && (m.plan === "pro" || m.plan === "coaching")) {
+          const n = document.createElement("div");
+          n.className = "notice notice-ok";
+          n.style.cssText = "max-width:600px;margin:1.5rem auto 0";
+          n.textContent = `✓ You're on the ${m.plan === "pro" ? "Pro" : "Coaching"} plan. Manage it from your account.`;
+          document.querySelector(".wrap").prepend(n);
+        }
+      } catch (e) {}
+    }
+  }
 </script>
 </body>
 </html>

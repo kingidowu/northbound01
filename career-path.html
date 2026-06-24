@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Career Path Simulator - The Career Architect</title>
+<meta name="description" content="See 3 realistic next career paths from where you are now - with salary ranges, timelines, certifications, and your first step. Free AI tool for IT, cloud, and healthcare-tech professionals." />
+<link rel="canonical" href="https://thecareerarchitect.org/career-path.html" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="AI Career Path Simulator" />
+<meta property="og:description" content="Map 3 realistic next moves from your current role, with salary, timeline, and certifications." />
+<meta property="og:url" content="https://thecareerarchitect.org/career-path.html" />
+<meta name="theme-color" content="#0E1733" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%230E1733'/%3E%3Cpath d='M11 30 L20 11 L29 30' fill='none' stroke='%2327C285' stroke-width='3.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3Cline x1='15' y1='23.5' x2='25' y2='23.5' stroke='%2327C285' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='10' r='2.4' fill='%23D99A28'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/styles.css" />
+<style>
+  .field{margin-bottom:1rem}
+  .field label{display:block;font-weight:600;font-size:.9rem;margin-bottom:.35rem}
+  .field input,.field textarea,.field select{width:100%;padding:.7rem .85rem;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--white);color:var(--ink)}
+  .field textarea{min-height:90px;resize:vertical}
+  .path{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:1.4rem;margin-bottom:1rem}
+  .path h3{font-size:1.2rem;margin-bottom:.2rem}
+  .tag{display:inline-block;border-radius:999px;padding:.2rem .7rem;font-size:.75rem;font-weight:600;font-family:'Space Mono',monospace}
+  .tag.strong{background:rgba(22,137,91,.12);color:var(--emerald)}
+  .tag.stretch{background:rgba(217,154,40,.15);color:#9a6c12}
+  .tag.bold{background:rgba(14,23,51,.08);color:var(--ink)}
+  .meta{display:flex;gap:1.4rem;flex-wrap:wrap;margin:.7rem 0;color:var(--slate);font-size:.9rem}
+  .meta b{color:var(--ink)}
+  .path ul{padding-left:1.1rem;line-height:1.7;color:var(--ink-2)}
+  .first{margin-top:.8rem;padding:.7rem .9rem;background:var(--paper-2);border-radius:10px;font-size:.92rem}
+  .certs{display:flex;flex-wrap:wrap;gap:.4rem;margin:.6rem 0}
+  .certs span{background:var(--paper-2);border:1px solid var(--line);border-radius:999px;padding:.2rem .7rem;font-size:.8rem}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="wrap nav-in">
+  <a class="brand" href="/index.html"><svg class="brand-mark" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#0E1733"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg><span>The Career Architect</span></a>
+  <div class="nav-links">
+    <a href="/index.html">Home</a><a href="/jobs.html">Jobs</a>
+    <a href="/career-path.html" class="active">Career paths</a>
+    <a href="/pricing.html">Pricing</a><a class="btn btn-ghost" href="/seeker.html">My account</a>
+  </div>
+</div></nav>
+
+<header class="wrap" style="max-width:760px;padding:3rem 0 1rem;text-align:center">
+  <span class="eyebrow" style="justify-content:center">AI Career Path Simulator</span>
+  <h1 style="font-size:2.3rem;margin:1rem 0 .6rem">Where can your career go next?</h1>
+  <p style="font-size:1.1rem;color:var(--slate)">Tell us where you are now. Our AI maps 3 realistic next moves with salary, timeline, and the exact certifications to get there.</p>
+</header>
+
+<main class="wrap" style="max-width:760px;padding:1rem 0 3rem">
+  <form id="form" style="background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:1.6rem">
+    <div class="field">
+      <label for="role">Your current role</label>
+      <input id="role" placeholder="e.g. IT Support Specialist" maxlength="200" />
+    </div>
+    <div class="field">
+      <label for="experience">Experience level</label>
+      <select id="experience">
+        <option value="">Select...</option>
+        <option>Student / entry</option>
+        <option>1-3 years</option>
+        <option>3-6 years</option>
+        <option>6-10 years</option>
+        <option>10+ years</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="skills">Your skills &amp; tools</label>
+      <textarea id="skills" placeholder="e.g. Windows, Active Directory, ticketing, basic networking, CompTIA A+, some Python" maxlength="2000"></textarea>
+    </div>
+    <div class="field">
+      <label for="interest">What are you drawn to? (optional)</label>
+      <input id="interest" placeholder="e.g. cloud, security, working remotely, higher pay" maxlength="400" />
+    </div>
+    <button class="btn btn-accent" type="submit" id="go" style="width:100%;justify-content:center">Map my career paths</button>
+    <p id="err" style="color:#b3261e;font-size:.9rem;margin-top:.7rem;display:none"></p>
+  </form>
+
+  <div id="loading" style="display:none;text-align:center;padding:2.5rem;color:var(--slate)">
+    <p>Mapping your paths with AI...</p>
+  </div>
+
+  <div id="results" style="margin-top:1.5rem"></div>
+
+  <div id="cta" style="display:none;margin-top:1.5rem;background:var(--ink);color:var(--paper);border-radius:var(--r);padding:1.8rem;text-align:center">
+    <h2 style="color:var(--paper);font-size:1.4rem;margin-bottom:.5rem">Ready to make the move?</h2>
+    <p style="color:var(--paper-2);margin-bottom:1.2rem">Find remote roles on your chosen path and tailor your resume to each one with AI.</p>
+    <a class="btn btn-accent" href="/jobs.html">Browse matching jobs</a>
+  </div>
+</main>
+
+<footer style="background:var(--ink);color:var(--paper-2)"><div class="wrap" style="padding:2.2rem 0;display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;align-items:center">
+  <a class="brand" href="/index.html" style="color:var(--paper)"><svg class="brand-mark" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#1C2748"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg><span>The Career Architect</span></a>
+  <div style="display:flex;gap:1.2rem;font-size:.9rem;flex-wrap:wrap"><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/refund.html">Refunds</a></div>
+  <small>© 2026 The Career Architect</small>
+</div></footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fitClass = (f) => f === "Strong fit" ? "strong" : f === "Stretch" ? "stretch" : "bold";
+
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("err").style.display = "none";
+  const payload = {
+    role: $("role").value.trim(),
+    experience: $("experience").value,
+    skills: $("skills").value.trim(),
+    interest: $("interest").value.trim(),
+  };
+  if (payload.role.length < 2 && payload.skills.length < 10) {
+    $("err").textContent = "Add your current role and a few skills.";
+    $("err").style.display = "block";
+    return;
+  }
+  $("go").disabled = true;
+  $("loading").style.display = "block";
+  $("results").innerHTML = "";
+  $("cta").style.display = "none";
+  try {
+    const r = await fetch("/api/career-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "Something went wrong.");
+    render(d);
+  } catch (err) {
+    $("err").textContent = err.message;
+    $("err").style.display = "block";
+  } finally {
+    $("go").disabled = false;
+    $("loading").style.display = "none";
+  }
+});
+
+function render(d) {
+  let html = d.summary ? `<p style="font-size:1.05rem;margin-bottom:1.2rem">${esc(d.summary)}</p>` : "";
+  (d.paths || []).forEach(p => {
+    html += `<div class="path">
+      <span class="tag ${fitClass(p.fit)}">${esc(p.fit)}</span>
+      <h3 style="margin-top:.5rem">${esc(p.title)}</h3>
+      <p style="color:var(--ink-2)">${esc(p.why)}</p>
+      <div class="meta"><span>💰 <b>${esc(p.salary_range)}</b></span><span>⏱ <b>${esc(p.timeline)}</b></span></div>
+      <strong style="font-size:.9rem">Steps</strong>
+      <ul>${(p.steps||[]).map(s => `<li>${esc(s)}</li>`).join("")}</ul>
+      ${(p.certifications||[]).length ? `<div class="certs">${p.certifications.map(c => `<span>${esc(c)}</span>`).join("")}</div>` : ""}
+      <div class="first">👉 <b>This week:</b> ${esc(p.first_action)}</div>
+    </div>`;
+  });
+  $("results").innerHTML = html;
+  $("cta").style.display = "block";
+}
+</script>
+</body>
+</html>
