@@ -70,10 +70,15 @@ export default async function handler(req, res) {
       created_at: j.created || null,
     }));
 
-    // Keep only genuinely-remote roles.
-    let out = remote
-      ? jobs.filter((j) => /\b(remote|work[ -]?from[ -]?home|wfh|telecommut|fully distributed)\b/i.test(j.title + " " + j.description)).map((j) => ({ ...j, work_mode: "Remote" }))
-      : jobs;
+    // Prefer genuinely-remote roles, but fall back to the remote-biased query
+    // results if Adzuna's short snippets don't literally say "remote".
+    let out = jobs;
+    if (remote) {
+      const detected = jobs
+        .filter((j) => /\b(remote|work[ -]?from[ -]?home|wfh|telecommut|fully distributed|anywhere)\b/i.test(j.title + " " + j.description))
+        .map((j) => ({ ...j, work_mode: "Remote" }));
+      out = detected.length ? detected : jobs;
+    }
     if (q.relevance) out = await filterRelevant(out);
     res.status(200).json({ jobs: out, configured: true, count: out.length });
   } catch (e) {
