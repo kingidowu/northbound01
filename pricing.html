@@ -126,9 +126,9 @@
 
     <h2 style="font-size:1.4rem;margin-top:3.5rem">One-time, no subscription</h2>
     <div class="packs">
-      <div class="pack"><b>Résumé revamp</b><div class="p">$49</div><p>A human + AI full rewrite of your résumé, tailored to your target roles.</p></div>
-      <div class="pack"><b>Career strategy session</b><div class="p">$99</div><p>A 60-minute 1:1 to map your next move and a concrete plan.</p></div>
-      <div class="pack"><b>Mock interview</b><div class="p">$59</div><p>A realistic practice interview for your target role with detailed feedback.</p></div>
+      <div class="pack"><b>Résumé revamp</b><div class="p">$49</div><p>A human + AI full rewrite of your résumé, tailored to your target roles.</p><button class="btn btn-ghost" data-plan="pack_resume" style="margin-top:.9rem;width:100%">Buy</button></div>
+      <div class="pack"><b>Career strategy session</b><div class="p">$99</div><p>A 60-minute 1:1 to map your next move and a concrete plan.</p><button class="btn btn-ghost" data-plan="pack_strategy" style="margin-top:.9rem;width:100%">Buy</button></div>
+      <div class="pack"><b>Mock interview</b><div class="p">$59</div><p>A realistic practice interview for your target role with detailed feedback.</p><button class="btn btn-ghost" data-plan="pack_mock" style="margin-top:.9rem;width:100%">Buy</button></div>
     </div>
 
     <div class="emp">
@@ -162,6 +162,29 @@
     document.querySelectorAll("[data-m]").forEach(el=>{ el.textContent = annual ? el.dataset.y : el.dataset.m; });
     document.querySelectorAll(".per").forEach(el=>{ el.textContent = annual ? "mo, billed yearly" : "mo"; });
   });
+
+  // Stripe checkout
+  async function checkout(plan, btn){
+    const orig = btn.textContent; btn.textContent = "Loading…"; btn.style.pointerEvents = "none";
+    try{
+      const res = await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan})});
+      const d = await res.json();
+      if(res.status===503){ alert("Online billing isn't switched on yet. Create your free account and we'll get you set up."); location.href="seeker.html"; return; }
+      if(!res.ok) throw new Error(d.error||"Checkout error");
+      location.href = d.url;
+    }catch(e){ alert(e.message); btn.textContent = orig; btn.style.pointerEvents = ""; }
+  }
+  document.querySelectorAll("[data-plan]").forEach(b=>b.addEventListener("click", e=>{
+    e.preventDefault();
+    let plan = b.dataset.plan;
+    if(plan==="pro" || plan==="coaching") plan += annual ? "_annual" : "_monthly";
+    checkout(plan, b);
+  }));
+
+  // success/cancel banners
+  const sp = new URLSearchParams(location.search);
+  if(sp.get("success")) { const n=document.createElement("div"); n.className="notice notice-ok"; n.style.maxWidth="600px"; n.style.margin="1.5rem auto 0"; n.textContent="✓ Payment received - thank you! Check your email for confirmation."; document.querySelector(".wrap").prepend(n); }
+  if(sp.get("canceled")) { const n=document.createElement("div"); n.className="notice notice-warn"; n.style.maxWidth="600px"; n.style.margin="1.5rem auto 0"; n.textContent="Checkout canceled - no charge made."; document.querySelector(".wrap").prepend(n); }
 </script>
 </body>
 </html>
