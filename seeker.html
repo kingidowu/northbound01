@@ -79,6 +79,11 @@
         <p class="card-sub">Everything you've applied to, and where it stands.</p>
         <div class="grid" id="apps"><p class="muted">Loading…</p></div>
       </div>
+      <div class="card">
+        <h2>Tailored résumés</h2>
+        <p class="card-sub">Résumés you tailored to specific jobs from the board.</p>
+        <div class="grid" id="tailored"><p class="muted">Loading…</p></div>
+      </div>
     </section>
   </div>
 </main>
@@ -155,12 +160,26 @@ async function loadApps(){
     </div>`).join("");
 }
 
+async function loadTailored(){
+  const { data, error } = await sb.from("tailored_resumes").select("*").order("created_at",{ascending:false});
+  const box=$("tailored");
+  if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
+  if(!data || !data.length){ box.innerHTML='<p class="muted">None yet. On the <a href="jobs.html">job board</a>, tap ✨ Tailor résumé on any job, then save it.</p>'; return; }
+  box.innerHTML = data.map(r=>`
+    <div class="row">
+      <div><div class="t">${esc(r.job_title||"Tailored résumé")}</div><div class="s">${esc(r.company||"")}${r.company?" · ":""}${esc((r.created_at||"").slice(0,10))}</div></div>
+      <div style="display:flex;gap:.7rem"><button class="link-btn" style="color:var(--emerald)" data-view="${r.id}">View</button><button class="link-btn" data-del="${r.id}">Delete</button></div>
+    </div>`).join("");
+  box.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{ const r=data.find(x=>x.id===b.dataset.view); if(r) alert(r.content); });
+  box.querySelectorAll("[data-del]").forEach(b=>b.onclick=async ()=>{ if(!confirm("Delete this tailored résumé?"))return; await sb.from("tailored_resumes").delete().eq("id",b.dataset.del); loadTailored(); });
+}
+
 async function onSession(session){
   user = session?.user || null;
   if(user){
     $("authCard").classList.add("hidden"); $("dash").classList.remove("hidden");
     $("whoami").textContent = "Signed in as " + user.email;
-    loadSaved(); loadApps();
+    loadSaved(); loadApps(); loadTailored();
   } else {
     $("dash").classList.add("hidden");
     if(SUPABASE_URL && SUPABASE_ANON_KEY) $("authCard").classList.remove("hidden");

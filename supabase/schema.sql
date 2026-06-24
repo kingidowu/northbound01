@@ -147,6 +147,18 @@ alter table public.saved_jobs enable row level security;
 drop policy if exists "saved own" on public.saved_jobs;
 create policy "saved own" on public.saved_jobs for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+create table if not exists public.tailored_resumes (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  job_title   text,
+  company     text,
+  content     text not null,
+  created_at  timestamptz not null default now()
+);
+alter table public.tailored_resumes enable row level security;
+drop policy if exists "tailored own" on public.tailored_resumes;
+create policy "tailored own" on public.tailored_resumes for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- ---------- Assessment submissions (admin-visible) ----------
 create table if not exists public.assessments (
   id          uuid primary key default gen_random_uuid(),

@@ -164,11 +164,13 @@
     <div id="tlMsg" class="notice hidden"></div>
     <button class="btn btn-accent" id="tlBuild" type="button" style="width:100%">Build my tailored résumé</button>
     <div id="tlResult" class="hidden" style="margin-top:1.3rem">
+      <div id="tlMatch" style="display:flex;gap:.8rem;align-items:center;margin-bottom:.9rem;font-family:'Space Grotesk';font-weight:700;font-size:1.05rem"></div>
       <div class="notice notice-ok" id="tlCoverage" style="margin:0 0 .8rem"></div>
       <strong style="font-size:.9rem">What changed</strong>
       <ul id="tlChanges" style="font-size:.9rem;color:var(--slate);padding-left:1.1rem"></ul>
       <label style="display:block;font-weight:600;font-size:.9rem;margin:.8rem 0 .4rem;overflow:hidden">Tailored résumé <button type="button" id="tlCopy" class="btn btn-ghost" style="padding:.3rem .7rem;font-size:.8rem;float:right">Copy</button></label>
       <textarea id="tlText" style="width:100%;min-height:300px;padding:.9rem;border:1px solid var(--line);border-radius:10px;font-family:monospace;font-size:.85rem;background:var(--paper)"></textarea>
+      <button class="btn btn-ink hidden" id="tlSave" type="button" style="margin-top:.8rem">💾 Save to my account</button>
     </div>
   </div>
 </div>
@@ -503,15 +505,26 @@ $("tlBuild").onclick = async ()=>{
     const d = await res.json();
     if(!res.ok) throw new Error(d.error||"Failed");
     if(d.keywords?.length) renderKeywords(d.keywords);
+    const mb=d.match_before||0, ma=d.match_after||0, up=ma-mb;
+    $("tlMatch").innerHTML = `<span style="color:var(--slate)">Match ${mb}%</span><span style="color:var(--emerald)">→ ${ma}%</span>${up>0?`<span class="badge badge-verified">+${up}</span>`:""}`;
     $("tlCoverage").textContent = d.coverage || "";
     $("tlChanges").innerHTML = (d.changes||[]).map(c=>`<li>${esc(c)}</li>`).join("");
     $("tlText").value = d.tailored_resume || "";
+    $("tlSave").classList.toggle("hidden", !user);
+    $("tlSave").textContent = "💾 Save to my account";
     $("tlResult").classList.remove("hidden");
     $("tlResult").scrollIntoView({behavior:"smooth",block:"start"});
   }catch(e){ m.className="notice notice-err"; m.textContent=e.message; m.classList.remove("hidden"); }
   btn.disabled=false; btn.textContent=o;
 };
 $("tlCopy").onclick = ()=>{ $("tlText").select(); navigator.clipboard.writeText($("tlText").value); $("tlCopy").textContent="Copied ✓"; setTimeout(()=>$("tlCopy").textContent="Copy",1500); };
+$("tlSave").onclick = async ()=>{
+  if(!user || !tailorJob) return;
+  $("tlSave").disabled=true;
+  const { error } = await sb.from("tailored_resumes").insert({ user_id:user.id, job_title:tailorJob.title, company:tailorJob.company, content:$("tlText").value });
+  $("tlSave").textContent = error ? "Save failed" : "Saved ✓ — see My account";
+  $("tlSave").disabled=false;
+};
 
 load().then(refreshUser).then(loadWeb);
 </script>

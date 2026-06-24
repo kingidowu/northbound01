@@ -7,11 +7,13 @@ const SCHEMA = {
   type: "object",
   properties: {
     keywords: { type: "array", items: { type: "string" }, description: "8-14 must-have skills, tools, and requirements pulled from the job description." },
+    match_before: { type: "integer", description: "0-100: how well the ORIGINAL resume matches this job's requirements. 0 if no resume given." },
+    match_after: { type: "integer", description: "0-100: how well the TAILORED resume matches. 0 if no resume given." },
     tailored_resume: { type: "string", description: "The candidate's resume rewritten and tailored to this job: ATS-friendly plain text, keywords worked in truthfully, quantified where possible. Empty string if no resume was provided." },
     changes: { type: "array", items: { type: "string" }, description: "Key tailoring changes and which keywords were incorporated. Empty if no resume." },
     coverage: { type: "string", description: "One short line on keyword coverage (e.g. 'Now aligns with 9 of the role's key requirements'), or, if no resume was given, 'Paste your resume to tailor it to these keywords.'" },
   },
-  required: ["keywords", "tailored_resume", "changes", "coverage"],
+  required: ["keywords", "match_before", "match_after", "tailored_resume", "changes", "coverage"],
   additionalProperties: false,
 };
 
@@ -44,7 +46,10 @@ export default async function handler(req, res) {
     });
 
     const text = message.content.find((x) => x.type === "text")?.text || "{}";
-    res.status(200).json(JSON.parse(text));
+    const data = JSON.parse(text);
+    data.match_before = Math.max(0, Math.min(100, Math.round(data.match_before || 0)));
+    data.match_after = Math.max(0, Math.min(100, Math.round(data.match_after || 0)));
+    res.status(200).json(data);
   } catch (e) {
     console.error("tailor failed:", e);
     res.status(502).json({ error: "Couldn't process. Try again." });
