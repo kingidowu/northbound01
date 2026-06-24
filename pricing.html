@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pricing - The Career Architect</title>
+<meta name="description" content="Simple plans for your job search: free AI tools, Pro for unlimited, and 1:1 coaching." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%230E1733'/%3E%3Cpath d='M11 30 L20 11 L29 30' fill='none' stroke='%2327C285' stroke-width='3.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3Cline x1='15' y1='23.5' x2='25' y2='23.5' stroke='%2327C285' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='10' r='2.4' fill='%23D99A28'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:2.5rem;align-items:start}
+  @media(max-width:880px){.tiers{grid-template-columns:1fr}}
+  .tier{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:1.7rem 1.6rem;display:flex;flex-direction:column}
+  .tier.pop{border-color:var(--emerald);box-shadow:0 18px 50px -24px rgba(22,137,91,.45);position:relative}
+  .tier.pop::before{content:"Most popular";position:absolute;top:-.7rem;left:1.6rem;background:var(--emerald);color:#fff;font-family:"Space Mono";font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .6rem;border-radius:6px}
+  .tier h3{font-size:1.2rem}
+  .price{font-family:"Space Grotesk";font-weight:700;font-size:2.4rem;margin:.6rem 0 .1rem}
+  .price small{font-size:.95rem;color:var(--slate);font-weight:500}
+  .tier .desc{color:var(--slate);font-size:.92rem;min-height:2.6em}
+  .tier ul{list-style:none;padding:0;margin:1.2rem 0;display:grid;gap:.6rem}
+  .tier li{font-size:.92rem;padding-left:1.5rem;position:relative}
+  .tier li::before{content:"✓";position:absolute;left:0;color:var(--emerald);font-weight:700}
+  .tier li.off{color:var(--slate);opacity:.7}
+  .tier li.off::before{content:"–";color:var(--slate)}
+  .tier .btn{margin-top:auto;width:100%;justify-content:center}
+  .toggle-bar{display:flex;justify-content:center;gap:.6rem;align-items:center;margin-top:1.4rem;font-size:.9rem;color:var(--slate)}
+  .switch{width:46px;height:26px;border-radius:99px;background:var(--paper-2);border:1px solid var(--line);position:relative;cursor:pointer}
+  .switch.on{background:var(--emerald)}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+  .switch.on::after{left:22px}
+  .packs{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1.5rem}
+  @media(max-width:720px){.packs{grid-template-columns:1fr}}
+  .pack{border:1px solid var(--line);border-radius:12px;padding:1.2rem;background:var(--white)}
+  .pack b{font-family:"Space Grotesk";font-size:1.1rem;display:block}
+  .pack .p{color:var(--emerald);font-family:"Space Grotesk";font-weight:700;font-size:1.3rem;margin-top:.3rem}
+  .pack p{font-size:.88rem;color:var(--slate);margin-top:.3rem}
+  .emp{background:var(--ink);color:var(--paper);border-radius:16px;padding:2rem;margin-top:1.5rem;display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;align-items:center}
+  .emp h3{color:var(--paper);font-size:1.3rem}
+  .emp p{color:rgba(246,244,238,.75);font-size:.95rem;margin-top:.4rem;max-width:48ch}
+  .emp .price{color:var(--emerald-bright);margin:0}
+  .note{font-size:.82rem;color:var(--slate);text-align:center;margin-top:1.4rem}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#0E1733"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg>
+      <span data-brand>The Career Architect</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="ats.html">Resume check</a>
+      <a href="jobs.html">Jobs</a>
+      <a href="pricing.html" class="active">Pricing</a>
+    </div>
+  </div>
+</nav>
+
+<main class="section">
+  <div class="wrap">
+    <div class="page-head" style="text-align:center;margin-inline:auto">
+      <span class="eyebrow" style="justify-content:center">Pricing</span>
+      <h1>Start free. Upgrade when you're ready.</h1>
+      <p style="margin-inline:auto">Every core AI tool is free to try. Go Pro for unlimited, or add real human coaching when you want a person in your corner.</p>
+    </div>
+
+    <div class="toggle-bar">
+      <span>Monthly</span>
+      <div class="switch" id="billSwitch" role="button" aria-label="Toggle annual billing"></div>
+      <span>Annual <span style="color:var(--emerald)">(2 months free)</span></span>
+    </div>
+
+    <div class="tiers">
+      <div class="tier">
+        <h3>Free</h3>
+        <div class="price">$0</div>
+        <div class="desc">The essential AI tools to get moving.</div>
+        <ul>
+          <li>AI career assessment + snapshot</li>
+          <li>Browse &amp; apply to all jobs</li>
+          <li>3 resume ATS checks / month</li>
+          <li>1 résumé tailor / month</li>
+          <li>1 interview prep / month</li>
+          <li class="off">AI résumé rewriter</li>
+          <li class="off">Unlimited everything</li>
+        </ul>
+        <a class="btn btn-ghost" href="index.html#assessment">Start free</a>
+      </div>
+
+      <div class="tier pop">
+        <h3>Pro</h3>
+        <div class="price">$<span data-m="19" data-y="16">19</span><small> / <span class="per">mo</span></small></div>
+        <div class="desc">Unlimited AI for a serious job search.</div>
+        <ul>
+          <li>Everything in Free</li>
+          <li>Unlimited resume ATS checks</li>
+          <li>AI résumé rewriter</li>
+          <li>Unlimited résumé tailoring + save</li>
+          <li>Full ranked AI job matching</li>
+          <li>Unlimited interview prep + cover notes</li>
+          <li>Job alerts by field</li>
+          <li>Priority support</li>
+        </ul>
+        <a class="btn btn-accent" href="seeker.html" data-plan="pro">Go Pro</a>
+      </div>
+
+      <div class="tier">
+        <h3>Coaching</h3>
+        <div class="price">$<span data-m="99" data-y="82">99</span><small> / <span class="per">mo</span></small></div>
+        <div class="desc">Pro, plus a real coach in your corner.</div>
+        <ul>
+          <li>Everything in Pro</li>
+          <li>Monthly 1:1 career coaching</li>
+          <li>Human résumé review</li>
+          <li>Mock interview + feedback</li>
+          <li>Personalized search strategy</li>
+          <li>Offer &amp; salary negotiation help</li>
+        </ul>
+        <a class="btn btn-ink" href="seeker.html" data-plan="coaching">Start coaching</a>
+      </div>
+    </div>
+
+    <h2 style="font-size:1.4rem;margin-top:3.5rem">One-time, no subscription</h2>
+    <div class="packs">
+      <div class="pack"><b>Résumé revamp</b><div class="p">$49</div><p>A human + AI full rewrite of your résumé, tailored to your target roles.</p></div>
+      <div class="pack"><b>Career strategy session</b><div class="p">$99</div><p>A 60-minute 1:1 to map your next move and a concrete plan.</p></div>
+      <div class="pack"><b>Mock interview</b><div class="p">$59</div><p>A realistic practice interview for your target role with detailed feedback.</p></div>
+    </div>
+
+    <div class="emp">
+      <div>
+        <h3>For employers &amp; recruiters</h3>
+        <p>Post a job free. Upgrade to reach more candidates with featured placement, unlimited listings, applicant tracking, and a verified badge.</p>
+      </div>
+      <div style="text-align:right">
+        <div class="price">$49<small style="color:rgba(246,244,238,.6)"> / mo</small></div>
+        <a class="btn btn-accent" href="agent.html" style="margin-top:.6rem">Post a job</a>
+      </div>
+    </div>
+
+    <p class="note">Prices in USD. Cancel anytime. Online billing is being finalized - to start a paid plan now, create your free account and we'll get you set up.</p>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <a class="brand" href="index.html"><svg class="brand-mark" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#1C2748"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg><span data-brand style="color:var(--paper)">The Career Architect</span></a>
+    <small>Free AI tools · Pro · Coaching</small>
+  </div>
+</footer>
+
+<script>
+  const sw = document.getElementById("billSwitch");
+  let annual = false;
+  sw.addEventListener("click", ()=>{
+    annual = !annual;
+    sw.classList.toggle("on", annual);
+    document.querySelectorAll("[data-m]").forEach(el=>{ el.textContent = annual ? el.dataset.y : el.dataset.m; });
+    document.querySelectorAll(".per").forEach(el=>{ el.textContent = annual ? "mo, billed yearly" : "mo"; });
+  });
+</script>
+</body>
+</html>
