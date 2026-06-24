@@ -150,6 +150,29 @@
   </div>
 </div>
 
+<!-- Tailor résumé modal -->
+<div class="modal" id="tailorModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div><h3 id="tlTitle">Tailor résumé</h3><div class="muted" id="tlCo" style="font-size:.9rem"></div></div>
+      <button class="modal-close" id="tlClose" aria-label="Close">×</button>
+    </div>
+    <details style="margin-bottom:1rem"><summary style="cursor:pointer;font-weight:600;font-size:.88rem;color:var(--slate)">Read full job description</summary><div id="tlDesc" style="font-size:.9rem;color:var(--slate);white-space:pre-wrap;max-height:220px;overflow:auto;margin-top:.5rem"></div></details>
+    <div style="font-family:'Space Mono';font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--emerald);margin-bottom:.4rem">Key requirements the AI pulled out</div>
+    <div class="job-meta" id="tlKeywords"><span class="chip">Reading job…</span></div>
+    <div class="field" style="margin-top:1.1rem"><label>Paste your résumé</label><textarea id="tlResume" placeholder="Paste your résumé and the AI tailors it to hit these keywords…" style="min-height:140px"></textarea></div>
+    <div id="tlMsg" class="notice hidden"></div>
+    <button class="btn btn-accent" id="tlBuild" type="button" style="width:100%">Build my tailored résumé</button>
+    <div id="tlResult" class="hidden" style="margin-top:1.3rem">
+      <div class="notice notice-ok" id="tlCoverage" style="margin:0 0 .8rem"></div>
+      <strong style="font-size:.9rem">What changed</strong>
+      <ul id="tlChanges" style="font-size:.9rem;color:var(--slate);padding-left:1.1rem"></ul>
+      <label style="display:block;font-weight:600;font-size:.9rem;margin:.8rem 0 .4rem;overflow:hidden">Tailored résumé <button type="button" id="tlCopy" class="btn btn-ghost" style="padding:.3rem .7rem;font-size:.8rem;float:right">Copy</button></label>
+      <textarea id="tlText" style="width:100%;min-height:300px;padding:.9rem;border:1px solid var(--line);border-radius:10px;font-family:monospace;font-size:.85rem;background:var(--paper)"></textarea>
+    </div>
+  </div>
+</div>
+
 <footer>
   <div class="wrap foot-in">
     <a class="brand" href="index.html"><svg class="brand-mark" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#1C2748"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg><span data-brand style="color:var(--paper)">The Career Architect</span></a>
@@ -164,7 +187,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 const results = document.getElementById("results");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
-let sb = null, all = [], matchMap = null, user = null, savedSet = new Set();
+let sb = null, all = [], matchMap = null, user = null, savedSet = new Set(), lastWebJobs = [];
 if (SUPABASE_URL && SUPABASE_ANON_KEY) {
   sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } else {
@@ -203,7 +226,8 @@ function card(j){
     ${reason}
     <p class="job-desc">${esc((j.description||"").slice(0,260))}${(j.description||"").length>260?"…":""}</p>
     <div class="job-foot"><span class="sal">${esc(salary(j))}</span>
-      <div style="display:flex;gap:1rem;align-items:center">
+      <div style="display:flex;gap:.8rem;align-items:center">
+        <button class="link-btn" data-tailor="${esc(j.id)}" style="text-decoration:none;color:var(--emerald)">✨ Tailor résumé</button>
         <button class="link-btn" data-save="${esc(j.id)}" style="text-decoration:none;color:${savedSet.has(String(j.id))?'var(--emerald)':'var(--slate)'}">${savedSet.has(String(j.id))?'♥ Saved':'♡ Save'}</button>
         ${apply}
       </div>
@@ -402,7 +426,12 @@ function webCard(j){
     </div>
     <div class="job-meta">${meta}</div>
     <p class="job-desc">${esc((j.description||"").slice(0,240))}${(j.description||"").length>240?"…":""}</p>
-    <div class="job-foot"><span class="sal">${esc(salary(j))}</span>${j.apply_url?`<a class="btn btn-accent" href="${esc(j.apply_url)}" target="_blank" rel="noopener">Apply on source</a>`:""}</div>
+    <div class="job-foot"><span class="sal">${esc(salary(j))}</span>
+      <div style="display:flex;gap:.8rem;align-items:center">
+        <button class="link-btn" data-tailor="${esc(j.id)}" style="text-decoration:none;color:var(--emerald)">✨ Tailor résumé</button>
+        ${j.apply_url?`<a class="btn btn-accent" href="${esc(j.apply_url)}" target="_blank" rel="noopener">Apply on source</a>`:""}
+      </div>
+    </div>
   </article>`;
 }
 // Keep queries short - Adzuna requires ALL keywords (AND), and the server
@@ -431,13 +460,58 @@ async function loadWeb(){
     const d = await res.json();
     if(d.configured===false){ $("webResults").innerHTML='<div class="empty">Web jobs aren\'t connected yet.</div>'; }
     else if(!d.jobs || !d.jobs.length){ $("webResults").innerHTML='<div class="empty">No matching web roles - try another focus.</div>'; }
-    else { $("webResults").innerHTML = d.jobs.map(webCard).join(""); }
+    else { lastWebJobs = d.jobs; $("webResults").innerHTML = d.jobs.map(webCard).join(""); }
   }catch(e){ $("webResults").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
 }
 $("webCountry").value = localStorage.getItem("ca_web_country") || "us";
 $("webCountry").addEventListener("change", loadWeb);
 $("webBtn").addEventListener("click", loadWeb);
 renderFocusChips();
+
+/* ---- ✨ Tailor résumé to a job ---- */
+let tailorJob = null;
+function jobById(id){ return all.find(x=>String(x.id)===String(id)) || lastWebJobs.find(x=>String(x.id)===String(id)); }
+function renderKeywords(arr){ $("tlKeywords").innerHTML = (arr||[]).map(k=>`<span class="chip" style="color:var(--emerald)">${esc(k)}</span>`).join("") || '<span class="chip">—</span>'; }
+
+async function openTailor(j){
+  if(!j) return; tailorJob = j;
+  $("tlTitle").textContent = "Tailor résumé: " + j.title;
+  $("tlCo").textContent = j.company + (j.location?" · "+j.location:"");
+  $("tlDesc").textContent = j.description || "No description.";
+  $("tlResume").value = ""; $("tlResult").classList.add("hidden"); $("tlMsg").classList.add("hidden");
+  $("tlKeywords").innerHTML = '<span class="chip">Reading job…</span>';
+  $("tailorModal").classList.add("open");
+  try{
+    const res = await fetch("/api/tailor",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ jobTitle:j.title, jobDescription:j.description })});
+    const d = await res.json();
+    renderKeywords(res.ok ? d.keywords : ["Couldn't read keywords"]);
+  }catch(e){ renderKeywords(["Error reading job"]); }
+}
+$("tlClose").onclick = ()=> $("tailorModal").classList.remove("open");
+$("tailorModal").addEventListener("click", e=>{ if(e.target.id==="tailorModal") $("tailorModal").classList.remove("open"); });
+[results, $("webResults")].forEach(c=>c.addEventListener("click", e=>{
+  const t = e.target.closest("[data-tailor]"); if(t) openTailor(jobById(t.dataset.tailor));
+}));
+
+$("tlBuild").onclick = async ()=>{
+  const resume = $("tlResume").value.trim();
+  const m = $("tlMsg");
+  if(resume.length < 80){ m.className="notice notice-err"; m.textContent="Paste your résumé first."; m.classList.remove("hidden"); return; }
+  const btn=$("tlBuild"), o=btn.textContent; btn.disabled=true; btn.textContent="Tailoring…"; m.classList.add("hidden");
+  try{
+    const res = await fetch("/api/tailor",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ jobTitle:tailorJob.title, jobDescription:tailorJob.description, resume })});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error||"Failed");
+    if(d.keywords?.length) renderKeywords(d.keywords);
+    $("tlCoverage").textContent = d.coverage || "";
+    $("tlChanges").innerHTML = (d.changes||[]).map(c=>`<li>${esc(c)}</li>`).join("");
+    $("tlText").value = d.tailored_resume || "";
+    $("tlResult").classList.remove("hidden");
+    $("tlResult").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){ m.className="notice notice-err"; m.textContent=e.message; m.classList.remove("hidden"); }
+  btn.disabled=false; btn.textContent=o;
+};
+$("tlCopy").onclick = ()=>{ $("tlText").select(); navigator.clipboard.writeText($("tlText").value); $("tlCopy").textContent="Copied ✓"; setTimeout(()=>$("tlCopy").textContent="Copy",1500); };
 
 load().then(refreshUser).then(loadWeb);
 </script>
