@@ -6,6 +6,7 @@ const SITE = "https://thecareerarchitect.org";
 const STATIC = [
   { loc: "/", pr: "1.0", freq: "weekly" },
   { loc: "/jobs.html", pr: "0.9", freq: "daily" },
+  { loc: "/tools.html", pr: "0.8", freq: "monthly" },
   { loc: "/career-path.html", pr: "0.8", freq: "monthly" },
   { loc: "/salary.html", pr: "0.8", freq: "monthly" },
   { loc: "/linkedin.html", pr: "0.8", freq: "monthly" },
