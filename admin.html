@@ -83,6 +83,16 @@
       </div>
 
       <div class="card">
+        <h2>Team admins</h2>
+        <p class="card-sub">Invite a teammate as an admin. They'll get an email to set a password, then have full admin access.</p>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+          <input type="email" id="inviteEmail" placeholder="teammate@thecareerarchitect.org" style="flex:1;min-width:240px;padding:.6rem .8rem;border:1px solid var(--line);border-radius:10px;font:inherit" />
+          <button class="btn btn-accent" id="inviteBtn" type="button">Invite admin</button>
+        </div>
+        <div id="inviteMsg" class="notice hidden" style="margin-top:.8rem"></div>
+      </div>
+
+      <div class="card">
         <h2>Recruiters</h2>
         <p class="card-sub">Toggle the ✓ Verified badge that appears on their listings.</p>
         <div class="grid" id="recruiters"><p class="muted">Loading…</p></div>
@@ -170,6 +180,20 @@ $("forgot").onclick = async ()=>{
     msg($("authMsg"),"Check your email for a password reset link.","ok");
   }catch(e){ msg($("authMsg"), e.message || "Couldn't send reset email.", "err"); }
   $("forgot").disabled=false;
+};
+$("inviteBtn").onclick = async ()=>{
+  const email = $("inviteEmail").value.trim();
+  if(!email || !email.includes("@")){ msg($("inviteMsg"),"Enter a valid email.","err"); return; }
+  $("inviteBtn").disabled=true;
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    const res = await fetch("/api/invite-admin",{ method:"POST", headers:{ "Content-Type":"application/json", Authorization:"Bearer "+(session?.access_token||"") }, body: JSON.stringify({ email }) });
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error||"Invite failed.");
+    msg($("inviteMsg"), d.invited ? `Invite sent to ${email}. They'll set a password, then have admin access.` : `${email} is now an admin.`, "ok");
+    $("inviteEmail").value="";
+  }catch(e){ msg($("inviteMsg"), e.message, "err"); }
+  $("inviteBtn").disabled=false;
 };
 
 async function isAdmin(){
