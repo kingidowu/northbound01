@@ -47,6 +47,7 @@ ${body}
   <a class="brand" href="/index.html" style="color:var(--paper)">${brandSvg("#1C2748")}<span>The Career Architect</span></a>
   <small>© ${new Date().getFullYear()} The Career Architect</small>
 </div></footer>
+<script defer src="/_vercel/insights/script.js"></script>
 </body></html>`;
 }
 

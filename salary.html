@@ -126,5 +126,6 @@ function render(d){
   $("copyEmail").addEventListener("click", ()=>{ const t=$("emailOut"); t.select(); navigator.clipboard.writeText(t.value); $("copyEmail").textContent="Copied ✓"; setTimeout(()=>$("copyEmail").textContent="Copy email",1500); });
 }
 </script>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

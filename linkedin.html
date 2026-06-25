@@ -108,5 +108,6 @@ function render(d){
   $("copyAbout").addEventListener("click", ()=>{ const t=$("aboutOut"); t.select(); navigator.clipboard.writeText(t.value); $("copyAbout").textContent="Copied ✓"; setTimeout(()=>$("copyAbout").textContent="Copy About",1500); });
 }
 </script>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
