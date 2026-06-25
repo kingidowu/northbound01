@@ -1,7 +1,8 @@
 {
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/job/:id", "destination": "/api/job?id=:id" }
+    { "source": "/job/:id", "destination": "/api/job?id=:id" },
+    { "source": "/career/:slug", "destination": "/api/career-guide?slug=:slug" }
   ],
   "headers": [
     {

@@ -1,4 +1,5 @@
 import { getServiceClient } from "../lib/knowledge.js";
+import { CAREERS } from "../lib/careers-data.js";
 
 // Dynamic sitemap: static pages + SEO landing pages + every published job
 // (so Google can discover the /job/:id pages that carry JobPosting data).
@@ -7,6 +8,7 @@ const STATIC = [
   { loc: "/", pr: "1.0", freq: "weekly" },
   { loc: "/jobs.html", pr: "0.9", freq: "daily" },
   { loc: "/tools.html", pr: "0.8", freq: "monthly" },
+  { loc: "/careers.html", pr: "0.8", freq: "weekly" },
   { loc: "/career-path.html", pr: "0.8", freq: "monthly" },
   { loc: "/salary.html", pr: "0.8", freq: "monthly" },
   { loc: "/linkedin.html", pr: "0.8", freq: "monthly" },
@@ -39,6 +41,9 @@ export default async function handler(req, res) {
   const urls = [
     ...STATIC.map(
       (s) => `<url><loc>${SITE}${s.loc}</loc><changefreq>${s.freq}</changefreq><priority>${s.pr}</priority></url>`
+    ),
+    ...CAREERS.map(
+      (c) => `<url><loc>${SITE}/career/${c.slug}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`
     ),
     ...jobs.map((j) => {
       const d = new Date(j.created_at).toISOString().slice(0, 10);
