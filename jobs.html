@@ -501,8 +501,13 @@ $("tlBuild").onclick = async ()=>{
   if(resume.length < 80){ m.className="notice notice-err"; m.textContent="Paste your résumé first."; m.classList.remove("hidden"); return; }
   const btn=$("tlBuild"), o=btn.textContent; btn.disabled=true; btn.textContent="Tailoring…"; m.classList.add("hidden");
   try{
-    const res = await fetch("/api/tailor",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ jobTitle:tailorJob.title, jobDescription:tailorJob.description, resume })});
+    const headers = {"Content-Type":"application/json"};
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session?.access_token) headers.Authorization = "Bearer " + session.access_token;
+    const res = await fetch("/api/tailor",{method:"POST",headers,body:JSON.stringify({ jobTitle:tailorJob.title, jobDescription:tailorJob.description, resume })});
     const d = await res.json();
+    if(res.status===401){ m.className="notice notice-err"; m.innerHTML='Create a free account to tailor résumés (3 free every month). <a href="seeker.html" style="color:var(--emerald)">Sign in / sign up →</a>'; m.classList.remove("hidden"); btn.disabled=false; btn.textContent=o; return; }
+    if(res.status===402){ m.className="notice notice-warn"; m.innerHTML=esc(d.error)+' <a href="pricing.html" style="color:var(--emerald)">Go Pro →</a>'; m.classList.remove("hidden"); btn.disabled=false; btn.textContent=o; return; }
     if(!res.ok) throw new Error(d.error||"Failed");
     if(d.keywords?.length) renderKeywords(d.keywords);
     const mb=d.match_before||0, ma=d.match_after||0, up=ma-mb;
@@ -512,6 +517,7 @@ $("tlBuild").onclick = async ()=>{
     $("tlText").value = d.tailored_resume || "";
     $("tlSave").classList.toggle("hidden", !user);
     $("tlSave").textContent = "💾 Save to my account";
+    if(d._credits){ const left=Math.max(0,d._credits.limit-d._credits.used); $("tlCoverage").innerHTML += ` <span style="color:var(--slate)">· ${left} free tailor${left===1?"":"s"} left this month. <a href="pricing.html" style="color:var(--emerald)">Go unlimited →</a></span>`; }
     $("tlResult").classList.remove("hidden");
     $("tlResult").scrollIntoView({behavior:"smooth",block:"start"});
   }catch(e){ m.className="notice notice-err"; m.textContent=e.message; m.classList.remove("hidden"); }

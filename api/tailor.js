@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { rateLimit } from "../lib/ratelimit.js";
+import { gate, recordUse } from "../lib/entitlement.js";
 
 const client = new Anthropic();
 
@@ -30,6 +31,17 @@ export default async function handler(req, res) {
     const resume = (b.resume || "").toString().slice(0, 24000).trim();
     if (jd.length < 30) { res.status(400).json({ error: "No job description to read." }); return; }
 
+    // The keyword preview (no resume) is free for everyone. The actual tailoring
+    // (resume provided) is the Pro-gated action: free tier capped per month.
+    let g = null;
+    if (resume.length >= 80) {
+      g = await gate(req, "tailor");
+      if (!g.allowed) {
+        res.status(g.status).json({ error: g.error, upgrade: g.upgrade, signIn: g.signIn });
+        return;
+      }
+    }
+
     const task = resume.length >= 80
       ? "Extract the key requirements/keywords, then rewrite the candidate's resume to truthfully align with them (don't invent experience)."
       : "Extract the key requirements/keywords from the job. Leave tailored_resume empty and set coverage to ask for a resume.";
@@ -49,6 +61,8 @@ export default async function handler(req, res) {
     const data = JSON.parse(text);
     data.match_before = Math.max(0, Math.min(100, Math.round(data.match_before || 0)));
     data.match_after = Math.max(0, Math.min(100, Math.round(data.match_after || 0)));
+    await recordUse(g);
+    if (g && g.plan === "free") data._credits = { used: (g.used || 0) + 1, limit: g.limit };
     res.status(200).json(data);
   } catch (e) {
     console.error("tailor failed:", e);
