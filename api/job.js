@@ -6,6 +6,9 @@ const SITE = "https://thecareerarchitect.org";
 const esc = (s) =>
   String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+// Only allow safe link schemes - blocks javascript:/data: XSS in apply links.
+const safeUrl = (u) => (/^(https?:|mailto:)/i.test(String(u || "").trim()) ? String(u).trim() : null);
+
 const EMP_TYPE = {
   "full-time": "FULL_TIME", "fulltime": "FULL_TIME",
   "part-time": "PART_TIME", "parttime": "PART_TIME",
@@ -133,8 +136,9 @@ export default async function handler(req, res) {
     job.visa_sponsorship ? "Visa sponsorship" : "",
   ].filter(Boolean);
 
-  const applyHref = job.apply_url || `/jobs.html`;
-  const applyTarget = job.apply_url ? ` target="_blank" rel="noopener"` : "";
+  const cleanApply = safeUrl(job.apply_url);
+  const applyHref = cleanApply || `/jobs.html`;
+  const applyTarget = cleanApply ? ` target="_blank" rel="noopener nofollow"` : "";
 
   const body = `<main class="wrap" style="padding:2.5rem 0 1rem;max-width:820px">
     <a href="/jobs.html" style="color:var(--slate);font-size:.9rem">← All jobs</a>

@@ -99,7 +99,11 @@
   <small>© 2026 The Career Architect</small>
 </div></footer>
 
-<script>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+const sb = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+async function authHeaders(){ const h={"Content-Type":"application/json"}; if(sb){ const {data:{session}}=await sb.auth.getSession(); if(session?.access_token) h.Authorization="Bearer "+session.access_token; } return h; }
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fitClass = (f) => f === "Strong fit" ? "strong" : f === "Stretch" ? "stretch" : "bold";
@@ -123,8 +127,10 @@ $("form").addEventListener("submit", async (e) => {
   $("results").innerHTML = "";
   $("cta").style.display = "none";
   try {
-    const r = await fetch("/api/career-path", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const r = await fetch("/api/career-path", { method: "POST", headers: await authHeaders(), body: JSON.stringify(payload) });
     const d = await r.json();
+    if (r.status === 401) { $("err").innerHTML = 'Create a free account to map your paths (3 free every month). <a href="seeker.html" style="color:var(--emerald)">Sign in →</a>'; $("err").style.display = "block"; return; }
+    if (r.status === 402) { $("err").innerHTML = esc(d.error) + ' <a href="pricing.html" style="color:var(--emerald)">Go Pro →</a>'; $("err").style.display = "block"; return; }
     if (!r.ok) throw new Error(d.error || "Something went wrong.");
     render(d);
   } catch (err) {
@@ -150,6 +156,7 @@ function render(d) {
       <div class="first">👉 <b>This week:</b> ${esc(p.first_action)}</div>
     </div>`;
   });
+  if (d._credits) { const left = Math.max(0, d._credits.limit - d._credits.used); html += `<p style="color:var(--slate);font-size:.85rem;text-align:center">${left} free path maps left this month. <a href="pricing.html" style="color:var(--emerald)">Go unlimited →</a></p>`; }
   $("results").innerHTML = html;
   $("cta").style.display = "block";
 }
