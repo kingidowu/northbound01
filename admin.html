@@ -63,6 +63,7 @@
       <div class="field"><label>Password</label><input type="password" id="pass" autocomplete="current-password" minlength="6" autofocus /></div>
       <div id="authMsg" class="notice hidden"></div>
       <button class="btn btn-accent" id="signIn" type="button" style="width:100%">Sign in</button>
+      <button id="forgot" type="button" style="background:none;border:none;color:var(--slate);font:inherit;font-size:.85rem;cursor:pointer;margin-top:.8rem;text-decoration:underline">Forgot password?</button>
     </section>
 
     <!-- not-admin notice -->
@@ -159,6 +160,17 @@ $("signIn").onclick = async ()=>{
 };
 const signOut = async ()=>{ await sb.auth.signOut(); };
 $("signOut").onclick = signOut; $("signOut2").onclick = signOut;
+$("forgot").onclick = async ()=>{
+  const email=$("email").value.trim();
+  if(!email){ msg($("authMsg"),"Enter your email first, then tap Forgot password.","err"); return; }
+  $("forgot").disabled=true;
+  try{
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + "/reset.html" });
+    if(error) throw error;
+    msg($("authMsg"),"Check your email for a password reset link.","ok");
+  }catch(e){ msg($("authMsg"), e.message || "Couldn't send reset email.", "err"); }
+  $("forgot").disabled=false;
+};
 
 async function isAdmin(){
   const { data } = await sb.from("admins").select("id").eq("id", user.id).maybeSingle();

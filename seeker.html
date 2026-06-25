@@ -62,6 +62,7 @@
       <div class="field"><label>Password <span class="req">*</span></label><input type="password" id="pass" autocomplete="current-password" minlength="6" placeholder="At least 6 characters" /></div>
       <div id="authMsg" class="notice hidden"></div>
       <button class="btn btn-accent" id="authBtn" type="button" style="width:100%">Sign in</button>
+      <button id="forgot" type="button" style="background:none;border:none;color:var(--slate);font:inherit;font-size:.85rem;cursor:pointer;margin-top:.8rem;text-decoration:underline">Forgot password?</button>
     </section>
 
     <section class="dash hidden" id="dash">
@@ -130,6 +131,17 @@ $("authBtn").onclick = async ()=>{
     }
   }catch(e){ msg($("authMsg"), e.message || "Authentication failed.", "err"); }
   $("authBtn").disabled=false;
+};
+$("forgot").onclick = async ()=>{
+  const email=$("email").value.trim();
+  if(!email){ msg($("authMsg"),"Enter your email above first, then tap Forgot password.","err"); return; }
+  $("forgot").disabled=true;
+  try{
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + "/reset.html" });
+    if(error) throw error;
+    msg($("authMsg"),"Check your email for a password reset link.","ok");
+  }catch(e){ msg($("authMsg"), e.message || "Couldn't send reset email.", "err"); }
+  $("forgot").disabled=false;
 };
 $("signOut").onclick = async ()=>{ await sb.auth.signOut(); };
 

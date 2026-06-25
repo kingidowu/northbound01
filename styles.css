@@ -28,7 +28,12 @@ a{color:inherit;text-decoration:none}
 .nav-links{display:flex;align-items:center;gap:1.8rem;font-size:.92rem;color:var(--slate);font-weight:500}
 .nav-links a:not(.btn):hover{color:var(--ink)}
 .nav-links a.active{color:var(--ink)}
-@media(max-width:760px){.nav-links a:not(.btn){display:none}}
+@media(max-width:760px){
+  /* keep nav usable on mobile: wrap links into a row instead of hiding them */
+  .nav-in{flex-wrap:wrap;height:auto;padding:.55rem 0;gap:.4rem .9rem}
+  .nav-links{gap:.9rem 1rem;font-size:.85rem;width:100%;flex-wrap:wrap;row-gap:.4rem}
+  .nav-links .btn{padding:.5rem .9rem;font-size:.85rem}
+}
 
 /* buttons */
 .btn{font-family:"Space Grotesk";font-weight:600;font-size:.92rem;padding:.7rem 1.25rem;border-radius:10px;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;gap:.5rem;transition:transform .15s ease,box-shadow .15s ease,background .15s ease}
