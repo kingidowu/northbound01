@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { rateLimit } from "../lib/ratelimit.js";
+import { gate, recordUse } from "../lib/entitlement.js";
 
 const client = new Anthropic();
 
@@ -38,6 +39,9 @@ export default async function handler(req, res) {
     const resume = (b.resume || "").toString().slice(0, 12000).trim();
     if (!role) { res.status(400).json({ error: "Enter the role you're interviewing for." }); return; }
 
+    const g = await gate(req, "interview");
+    if (!g.allowed) { res.status(g.status).json({ error: g.error, upgrade: g.upgrade, signIn: g.signIn }); return; }
+
     const message = await client.messages.create({
       model: "claude-opus-4-8",
       max_tokens: 3000,
@@ -50,7 +54,10 @@ export default async function handler(req, res) {
     });
 
     const text = message.content.find((x) => x.type === "text")?.text || "{}";
-    res.status(200).json(JSON.parse(text));
+    const data = JSON.parse(text);
+    await recordUse(g);
+    if (g && g.plan === "free") data._credits = { used: (g.used || 0) + 1, limit: g.limit };
+    res.status(200).json(data);
   } catch (e) {
     console.error("interview failed:", e);
     res.status(502).json({ error: "Couldn't generate prep. Try again." });

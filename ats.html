@@ -111,9 +111,14 @@
 </footer>
 
 <script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+const sb = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+async function authHeaders(){ const h={"Content-Type":"application/json"}; if(sb){ const {data:{session}}=await sb.auth.getSession(); if(session?.access_token) h.Authorization="Bearer "+session.access_token; } return h; }
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function msg(t,k){ const m=$("atsMsg"); m.className="notice notice-"+k; m.textContent=t; m.classList.remove("hidden"); }
+function gateMsg(res,d,btn,o){ const m=$("atsMsg"); if(res.status===401){ m.className="notice notice-err"; m.innerHTML='Create a free account to rewrite your résumé (3 free every month). <a href="seeker.html" style="color:var(--emerald)">Sign in →</a>'; m.classList.remove("hidden"); btn.disabled=false; btn.textContent=o; return true; } if(res.status===402){ m.className="notice notice-warn"; m.innerHTML=esc(d.error)+' <a href="pricing.html" style="color:var(--emerald)">Go Pro →</a>'; m.classList.remove("hidden"); btn.disabled=false; btn.textContent=o; return true; } return false; }
 function clearMsg(){ $("atsMsg").classList.add("hidden"); }
 
 /* ---- file upload: .txt direct, .pdf via pdf.js ---- */
@@ -186,12 +191,14 @@ $("rewriteBtn").addEventListener("click", async ()=>{
   if(resume.length < 80){ msg("Paste your resume first.","err"); return; }
   const btn=$("rewriteBtn"), o=btn.textContent; btn.disabled=true; btn.innerHTML='<span class="spin"></span>Rewriting…';
   try{
-    const res = await fetch("/api/rewrite",{method:"POST",headers:{"Content-Type":"application/json"},
+    const res = await fetch("/api/rewrite",{method:"POST",headers:await authHeaders(),
       body:JSON.stringify({ resume, jobDescription:$("jd").value.trim() })});
     const d = await res.json();
+    if(gateMsg(res,d,btn,o)) return;
     if(!res.ok) throw new Error(d.error||"Failed");
     $("rwChanges").innerHTML = (d.changes||[]).map(c=>`<li>${esc(c)}</li>`).join("");
     $("rwText").value = d.improved_resume || "";
+    if(d._credits){ const left=Math.max(0,d._credits.limit-d._credits.used); $("rwChanges").innerHTML += `<li style="list-style:none;color:var(--slate);font-size:.85rem;margin-top:.5rem">${left} free rewrites left this month. <a href="pricing.html" style="color:var(--emerald)">Go unlimited →</a></li>`; }
     $("rewriteOut").classList.remove("hidden");
     $("rewriteOut").scrollIntoView({behavior:"smooth",block:"start"});
   }catch(e){ msg(e.message,"err"); }

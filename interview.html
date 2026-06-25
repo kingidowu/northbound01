@@ -76,9 +76,14 @@
 </footer>
 
 <script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+const sb = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+async function authHeaders(){ const h={"Content-Type":"application/json"}; if(sb){ const {data:{session}}=await sb.auth.getSession(); if(session?.access_token) h.Authorization="Bearer "+session.access_token; } return h; }
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function msg(t,k){ const m=$("msg"); m.className="notice notice-"+k; m.textContent=t; m.classList.remove("hidden"); }
+function gateMsg(res,d,btn,o){ const m=$("msg"); if(res.status===401){ m.className="notice notice-err"; m.innerHTML='Create a free account for interview prep (3 free every month). <a href="seeker.html" style="color:var(--emerald)">Sign in →</a>'; m.classList.remove("hidden"); btn.disabled=false; btn.textContent=o; return true; } if(res.status===402){ m.className="notice notice-warn"; m.innerHTML=esc(d.error)+' <a href="pricing.html" style="color:var(--emerald)">Go Pro →</a>'; m.classList.remove("hidden"); btn.disabled=false; btn.textContent=o; return true; } return false; }
 
 $("go").addEventListener("click", async ()=>{
   $("msg").classList.add("hidden");
@@ -87,9 +92,10 @@ $("go").addEventListener("click", async ()=>{
   const btn=$("go"), o=btn.textContent; btn.disabled=true; btn.innerHTML='<span class="spin"></span>Building…';
   $("out").style.display="none";
   try{
-    const res = await fetch("/api/interview",{method:"POST",headers:{"Content-Type":"application/json"},
+    const res = await fetch("/api/interview",{method:"POST",headers:await authHeaders(),
       body:JSON.stringify({ role, level:$("level").value, resume:$("resume").value.trim() })});
     const d = await res.json();
+    if(gateMsg(res,d,btn,o)) return;
     if(!res.ok) throw new Error(d.error||"Failed");
     $("questions").innerHTML = (d.questions||[]).map((q,i)=>`
       <details class="qa"${i===0?" open":""}>
@@ -99,7 +105,8 @@ $("go").addEventListener("click", async ()=>{
           <div class="qa-ans">${esc(q.sample_answer)}</div>
         </div>
       </details>`).join("");
-    $("tipsBox").innerHTML = `<h3 style="font-size:1.05rem;margin-bottom:.6rem">Prep tips</h3><ul>${(d.tips||[]).map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`;
+    const credLine = d._credits ? `<p style="color:var(--slate);font-size:.85rem;margin-top:.8rem">${Math.max(0,d._credits.limit-d._credits.used)} free interview preps left this month. <a href="pricing.html" style="color:var(--emerald)">Go unlimited →</a></p>` : "";
+    $("tipsBox").innerHTML = `<h3 style="font-size:1.05rem;margin-bottom:.6rem">Prep tips</h3><ul>${(d.tips||[]).map(t=>`<li>${esc(t)}</li>`).join("")}</ul>${credLine}`;
     $("out").style.display="block";
     $("out").scrollIntoView({behavior:"smooth",block:"start"});
   }catch(e){ msg(e.message,"err"); }
