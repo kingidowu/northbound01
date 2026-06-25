@@ -76,6 +76,11 @@
         <a class="btn btn-accent" href="pricing.html" id="planCta">See plans</a>
       </div>
       <div class="card">
+        <h2>Job alerts</h2>
+        <p class="card-sub">Saved searches we email you when new matching roles appear. Add one from the <a href="jobs.html">job board</a> (🔔 Email me new matches).</p>
+        <div class="grid" id="alerts"><p class="muted">Loading…</p></div>
+      </div>
+      <div class="card">
         <h2>Saved jobs</h2>
         <p class="card-sub">Roles you bookmarked from the <a href="jobs.html">job board</a>.</p>
         <div class="grid" id="saved"><p class="muted">Loading…</p></div>
@@ -191,6 +196,20 @@ async function loadTailored(){
   box.querySelectorAll("[data-del]").forEach(b=>b.onclick=async ()=>{ if(!confirm("Delete this tailored résumé?"))return; await sb.from("tailored_resumes").delete().eq("id",b.dataset.del); loadTailored(); });
 }
 
+async function loadAlerts(){
+  const { data, error } = await sb.from("saved_searches").select("*").order("created_at",{ascending:false});
+  const box=$("alerts");
+  if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
+  if(!data || !data.length){ box.innerHTML='<p class="muted">No alerts yet. On the <a href="jobs.html">job board</a>, tap 🔔 Email me new matches.</p>'; return; }
+  box.innerHTML = data.map(a=>`
+    <div class="row">
+      <div><div class="t">${esc(a.what)} <span class="badge ${a.active?'badge-verified':'badge-soft'}">${a.active?'on':'off'}</span></div>
+      <div class="s">${esc((a.country||'us').toUpperCase())}${a.last_run?' · last checked '+esc((a.last_run||'').slice(0,10)):''}</div></div>
+      <button class="link-btn" data-del-alert="${a.id}">Delete</button>
+    </div>`).join("");
+  box.querySelectorAll("[data-del-alert]").forEach(b=>b.onclick=async ()=>{ if(!confirm("Delete this alert?"))return; await sb.from("saved_searches").delete().eq("id",b.dataset.delAlert); loadAlerts(); });
+}
+
 async function loadPlan(){
   try{
     const { data:m } = await sb.from("memberships").select("plan,status,current_period_end").eq("user_id", user.id).maybeSingle();
@@ -209,7 +228,7 @@ async function onSession(session){
   if(user){
     $("authCard").classList.add("hidden"); $("dash").classList.remove("hidden");
     $("whoami").textContent = "Signed in as " + user.email;
-    loadSaved(); loadApps(); loadTailored(); loadPlan();
+    loadSaved(); loadApps(); loadTailored(); loadPlan(); loadAlerts();
   } else {
     $("dash").classList.add("hidden");
     if(SUPABASE_URL && SUPABASE_ANON_KEY) $("authCard").classList.remove("hidden");

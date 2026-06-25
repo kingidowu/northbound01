@@ -249,6 +249,24 @@ returns void language sql security definer set search_path = public as $$
   on conflict (user_id, month, feature) do update set count = public.ai_usage.count + 1;
 $$;
 
+-- ---------- Job alerts (saved searches) ----------
+-- A user saves a search; a daily cron emails them new matching jobs.
+create table if not exists public.saved_searches (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  email       text,
+  what        text not null,              -- the focus query
+  country     text default 'us',
+  seen_ids    text[] default '{}',        -- job ids already emailed
+  active      boolean not null default true,
+  created_at  timestamptz not null default now(),
+  last_run    timestamptz
+);
+alter table public.saved_searches enable row level security;
+drop policy if exists "saved_searches own" on public.saved_searches;
+create policy "saved_searches own" on public.saved_searches for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- (the cron updates seen_ids/last_run via the service role, which bypasses RLS)
+
 -- ---------- Bootstrap your first admin ----------
 -- After you sign up (via admin.html or agent.html), run THIS with your email to
 -- grant yourself admin (run it as the postgres role in the SQL editor):

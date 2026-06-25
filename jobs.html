@@ -108,10 +108,12 @@
         </div>
         <div style="display:flex;gap:.5rem;align-items:center">
           <select id="webCountry" style="font:inherit;border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;background:var(--paper)"><option value="us">United States</option><option value="ca">Canada</option></select>
+          <button class="btn btn-ghost" id="webAlert" type="button">🔔 Email me new matches</button>
           <button class="btn btn-ghost" id="webBtn" type="button">↻ Refresh</button>
         </div>
       </div>
       <div class="web-focus" id="webFocus"></div>
+      <div id="webAlertMsg" class="notice hidden" style="margin-top:.8rem"></div>
       <div class="results" id="webResults" style="margin-top:1.2rem"></div>
     </div>
   </div>
@@ -469,6 +471,20 @@ async function loadWeb(){
 $("webCountry").value = localStorage.getItem("ca_web_country") || "us";
 $("webCountry").addEventListener("change", loadWeb);
 $("webBtn").addEventListener("click", loadWeb);
+$("webAlert").addEventListener("click", async ()=>{
+  if(!user){ if(confirm("Sign in to get job alerts by email. Go to your account?")) location.href="seeker.html"; return; }
+  const f = FOCUS.find(x=>x.key===webFocus) || FOCUS[0];
+  const what = ($("q").value.trim() || f.what);
+  const country = $("webCountry").value;
+  const m = $("webAlertMsg"); const btn=$("webAlert"), o=btn.textContent; btn.disabled=true; btn.textContent="Saving…";
+  try{
+    const seen = (lastWebJobs||[]).map(j=>j.id).filter(Boolean);
+    const { error } = await sb.from("saved_searches").insert({ user_id:user.id, email:user.email, what, country, seen_ids:seen });
+    if(error) throw error;
+    m.className="notice notice-ok"; m.textContent=`✓ Alert set for "${what}". We'll email you new matches as they appear. Manage it in My account.`; m.classList.remove("hidden");
+  }catch(e){ m.className="notice notice-err"; m.textContent=e.message||"Couldn't set alert."; m.classList.remove("hidden"); }
+  btn.disabled=false; btn.textContent=o;
+});
 renderFocusChips();
 
 /* ---- ✨ Tailor résumé to a job ---- */
