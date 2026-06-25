@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI LinkedIn Profile Optimizer - The Career Architect</title>
+<meta name="description" content="Get a recruiter-optimized LinkedIn headline and About section in seconds. AI tuned for remote IT, cloud, and healthcare-tech roles. Free to start." />
+<link rel="canonical" href="https://thecareerarchitect.org/linkedin.html" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="AI LinkedIn Profile Optimizer" />
+<meta property="og:description" content="A recruiter-optimized headline and About section, ready to paste." />
+<meta property="og:url" content="https://thecareerarchitect.org/linkedin.html" />
+<meta name="theme-color" content="#0E1733" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%230E1733'/%3E%3Cpath d='M11 30 L20 11 L29 30' fill='none' stroke='%2327C285' stroke-width='3.4' stroke-linejoin='round' stroke-linecap='round'/%3E%3Cline x1='15' y1='23.5' x2='25' y2='23.5' stroke='%2327C285' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='10' r='2.4' fill='%23D99A28'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/styles.css" />
+<style>
+  .field{margin-bottom:1rem}.field label{display:block;font-weight:600;font-size:.9rem;margin-bottom:.35rem}
+  .field input,.field textarea{width:100%;padding:.7rem .85rem;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--white);color:var(--ink)}
+  .field textarea{min-height:110px;resize:vertical}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:1rem}@media(max-width:560px){.two{grid-template-columns:1fr}}
+  .res-card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:1.4rem;margin-bottom:1rem}
+  .res-card h3{font-size:1rem;margin-bottom:.6rem;font-family:'Space Grotesk'}
+  .hl{border:1px solid var(--line);border-radius:10px;padding:.8rem;margin-bottom:.6rem;display:flex;justify-content:space-between;gap:1rem;align-items:flex-start}
+  .hl button{flex:0 0 auto}
+  textarea.copybox{min-height:170px;width:100%;padding:1rem;border:1px solid var(--line);border-radius:10px;font:inherit;line-height:1.6;background:var(--paper)}
+  .certs{display:flex;flex-wrap:wrap;gap:.4rem}.certs span{background:var(--paper-2);border:1px solid var(--line);border-radius:999px;padding:.2rem .7rem;font-size:.8rem}
+  .res-card ul{padding-left:1.1rem;line-height:1.7;color:var(--ink-2)}
+</style>
+</head>
+<body>
+<nav class="nav"><div class="wrap nav-in">
+  <a class="brand" href="/index.html"><svg class="brand-mark" width="26" height="26" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#0E1733"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg><span>The Career Architect</span></a>
+  <div class="nav-links">
+    <a href="/index.html">Home</a><a href="/jobs.html">Jobs</a>
+    <a href="/linkedin.html" class="active">LinkedIn</a>
+    <a href="/pricing.html">Pricing</a><a class="btn btn-ghost" href="/seeker.html">My account</a>
+  </div>
+</div></nav>
+
+<header class="wrap" style="max-width:760px;padding:3rem 0 1rem;text-align:center">
+  <span class="eyebrow" style="justify-content:center">AI LinkedIn Optimizer</span>
+  <h1 style="font-size:2.3rem;margin:1rem 0 .6rem">Get found by recruiters</h1>
+  <p style="font-size:1.1rem;color:var(--slate)">Paste your current profile. Our AI rewrites your headline and About section to rank in recruiter search.</p>
+</header>
+
+<main class="wrap" style="max-width:760px;padding:1rem 0 3rem">
+  <form id="form" style="background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:1.6rem">
+    <div class="two">
+      <div class="field"><label for="target">Target role</label><input id="target" placeholder="e.g. Cloud Engineer" maxlength="200" /></div>
+      <div class="field"><label for="experience">Years of experience</label><input id="experience" placeholder="e.g. 5 years" maxlength="60" /></div>
+    </div>
+    <div class="field"><label for="headline">Current headline</label><input id="headline" placeholder="e.g. IT Support at Acme | CompTIA A+" maxlength="400" /></div>
+    <div class="field"><label for="about">Current About section</label><textarea id="about" placeholder="Paste your current LinkedIn About text (or leave blank to generate from scratch)." maxlength="4000"></textarea></div>
+    <button class="btn btn-accent" type="submit" id="go" style="width:100%;justify-content:center">Optimize my profile</button>
+    <p id="err" class="notice notice-err" style="display:none;margin-top:.8rem"></p>
+  </form>
+
+  <div id="loading" style="display:none;text-align:center;padding:2.5rem;color:var(--slate)"><p>Optimizing with AI...</p></div>
+  <div id="results" style="margin-top:1.5rem"></div>
+</main>
+
+<footer style="background:var(--ink);color:var(--paper-2)"><div class="wrap" style="padding:2.2rem 0;display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;align-items:center">
+  <a class="brand" href="/index.html" style="color:var(--paper)"><svg class="brand-mark" width="24" height="24" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="9" fill="#1C2748"/><path d="M11 30 L20 11 L29 30" fill="none" stroke="#27C285" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/><line x1="15" y1="23.5" x2="25" y2="23.5" stroke="#27C285" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="10" r="2.4" fill="#D99A28"/></svg><span>The Career Architect</span></a>
+  <div style="display:flex;gap:1.2rem;font-size:.9rem;flex-wrap:wrap"><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/refund.html">Refunds</a></div>
+  <small>© 2026 The Career Architect</small>
+</div></footer>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+const sb = (SUPABASE_URL && SUPABASE_ANON_KEY) ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+async function authHeaders(){ const h={"Content-Type":"application/json"}; if(sb){ const {data:{session}}=await sb.auth.getSession(); if(session?.access_token) h.Authorization="Bearer "+session.access_token; } return h; }
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+$("form").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  $("err").style.display="none";
+  const payload = { target:$("target").value.trim(), experience:$("experience").value.trim(), headline:$("headline").value.trim(), about:$("about").value.trim() };
+  if(payload.target.length<2 && payload.about.length<20 && payload.headline.length<5){ $("err").textContent="Add your target role and your current headline or About."; $("err").style.display="block"; return; }
+  const btn=$("go"), o=btn.textContent; btn.disabled=true; btn.textContent="Working…";
+  $("loading").style.display="block"; $("results").innerHTML="";
+  try{
+    const res = await fetch("/api/linkedin",{method:"POST",headers:await authHeaders(),body:JSON.stringify(payload)});
+    const d = await res.json();
+    if(res.status===401){ $("err").innerHTML='Create a free account to use the LinkedIn optimizer (3 free every month). <a href="seeker.html" style="color:var(--emerald)">Sign in →</a>'; $("err").style.display="block"; return; }
+    if(res.status===402){ $("err").innerHTML=esc(d.error)+' <a href="pricing.html" style="color:var(--emerald)">Go Pro →</a>'; $("err").style.display="block"; return; }
+    if(!res.ok) throw new Error(d.error||"Failed");
+    render(d);
+  }catch(err){ $("err").textContent=err.message; $("err").style.display="block"; }
+  finally{ btn.disabled=false; btn.textContent=o; $("loading").style.display="none"; }
+});
+
+function render(d){
+  const headlines = (d.headlines||[]).map((h,i)=>`<div class="hl"><span>${esc(h)}</span><button class="btn btn-ghost" data-copy="${i}">Copy</button></div>`).join("");
+  let html = `
+    <div class="res-card"><h3>Headline options</h3>${headlines}</div>
+    <div class="res-card"><h3>Optimized About</h3><textarea class="copybox" id="aboutOut" readonly>${esc(d.about)}</textarea><button class="btn btn-ghost" id="copyAbout" style="margin-top:.7rem">Copy About</button></div>
+    <div class="res-card"><h3>Keywords to include</h3><div class="certs">${(d.keywords||[]).map(k=>`<span>${esc(k)}</span>`).join("")}</div></div>
+    <div class="res-card"><h3>Profile tips</h3><ul>${(d.tips||[]).map(t=>`<li>${esc(t)}</li>`).join("")}</ul></div>`;
+  if(d._credits){ const left=Math.max(0,d._credits.limit-d._credits.used); html += `<p style="color:var(--slate);font-size:.85rem;text-align:center">${left} free optimizations left this month. <a href="pricing.html" style="color:var(--emerald)">Go unlimited →</a></p>`; }
+  $("results").innerHTML = html;
+  const hls = d.headlines||[];
+  $("results").querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click",()=>{ navigator.clipboard.writeText(hls[b.dataset.copy]||""); b.textContent="Copied ✓"; setTimeout(()=>b.textContent="Copy",1500); }));
+  $("copyAbout").addEventListener("click", ()=>{ const t=$("aboutOut"); t.select(); navigator.clipboard.writeText(t.value); $("copyAbout").textContent="Copied ✓"; setTimeout(()=>$("copyAbout").textContent="Copy About",1500); });
+}
+</script>
+</body>
+</html>
