@@ -137,8 +137,54 @@ async function fetchArbeitnow(what) {
   } catch (e) { console.error("Arbeitnow failed:", e); return []; }
 }
 
-// Pulls live job listings from multiple free sources (Adzuna + Remotive + RemoteOK
-// + Arbeitnow), merges and de-duplicates them, US/Canada-focused.
+// ---- Source 5: Jobicy (free, no key, remote, geo + tag search) ----
+async function fetchJobicy(what, country) {
+  try {
+    const url = new URL("https://jobicy.com/api/v2/remote-jobs");
+    url.searchParams.set("count", "50");
+    url.searchParams.set("geo", country === "ca" ? "canada" : "usa");
+    if (what) url.searchParams.set("tag", what);
+    const r = await fetch(url, { headers: { "User-Agent": "TheCareerArchitect/1.0" } });
+    if (!r.ok) return [];
+    const data = await r.json();
+    return (data.jobs || []).map((j) => ({
+      id: "jbc-" + j.id, external: true, source: "Jobicy",
+      title: j.jobTitle || "", company: j.companyName || "",
+      location: j.jobGeo || "Remote", category: (j.jobIndustry || [])[0] || "",
+      work_mode: "Remote", employment_type: (j.jobType || [])[0] || "Full-time",
+      salary_min: j.annualSalaryMin ? Number(j.annualSalaryMin) : null,
+      salary_max: j.annualSalaryMax ? Number(j.annualSalaryMax) : null,
+      salary_currency: j.salaryCurrency || "USD",
+      description: stripHtml(j.jobExcerpt || j.jobDescription), apply_url: j.url || "", created_at: j.pubDate || null,
+    }));
+  } catch (e) { console.error("Jobicy failed:", e); return []; }
+}
+
+// ---- Source 6: The Muse (free, no key, large US employer base) ----
+async function fetchTheMuse(what) {
+  try {
+    const url = new URL("https://www.themuse.com/api/public/jobs");
+    url.searchParams.set("page", "1");
+    url.searchParams.set("location", "Flexible / Remote");
+    const r = await fetch(url);
+    if (!r.ok) return [];
+    const data = await r.json();
+    const words = what.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    return (data.results || [])
+      .filter((j) => relevant(j.name || "", words))
+      .map((j) => ({
+        id: "muse-" + j.id, external: true, source: "The Muse",
+        title: j.name || "", company: j.company?.name || "",
+        location: (j.locations || []).map((l) => l.name).join(", ") || "Remote",
+        category: (j.categories || [])[0]?.name || "", work_mode: "Remote",
+        employment_type: j.type || "Full-time", salary_min: null, salary_max: null, salary_currency: "USD",
+        description: stripHtml(j.contents), apply_url: j.refs?.landing_page || "", created_at: j.publication_date || null,
+      }));
+  } catch (e) { console.error("The Muse failed:", e); return []; }
+}
+
+// Pulls live job listings from 6 free sources (Adzuna, Remotive, RemoteOK,
+// Arbeitnow, Jobicy, The Muse), merges and de-duplicates them, US/Canada-focused.
 export default async function handler(req, res) {
   if (req.method !== "POST" && req.method !== "GET") { res.status(405).json({ error: "Method not allowed" }); return; }
   const rl = await rateLimit(req, { limit: 30, windowMs: 60_000 });
@@ -151,16 +197,18 @@ export default async function handler(req, res) {
     const country = ["us", "ca", "gb"].includes((q.country || "").toString()) ? q.country : "us";
     const remote = q.remote !== false && q.remote !== "false";
 
-    const [adz, rmt, rok, arb] = await Promise.all([
+    const [adz, rmt, rok, arb, jbc, muse] = await Promise.all([
       fetchAdzuna(what, where, country, remote),
       fetchRemotive(what, country),
       fetchRemoteOK(what),
       fetchArbeitnow(what),
+      fetchJobicy(what, country),
+      fetchTheMuse(what),
     ]);
 
     // Merge + de-dupe by title+company (curated remote sources first).
     const seen = new Set();
-    let merged = [...rmt, ...rok, ...adz, ...arb].filter((j) => {
+    let merged = [...rmt, ...jbc, ...rok, ...muse, ...adz, ...arb].filter((j) => {
       const k = (j.title + "|" + j.company).toLowerCase().replace(/\s+/g, " ").trim();
       if (!j.title || seen.has(k)) return false;
       seen.add(k);
@@ -173,8 +221,8 @@ export default async function handler(req, res) {
       if (detected.length) merged = detected;
     }
 
+    merged = merged.slice(0, 80);
     if (q.relevance) merged = await filterRelevant(merged);
-    merged = merged.slice(0, 60);
     res.status(200).json({ jobs: merged, configured: true, count: merged.length });
   } catch (e) {
     console.error("external-jobs failed:", e);
