@@ -63,14 +63,8 @@ async function fetchRemotive(what, country) {
     const r = await fetch(url, { headers: { "User-Agent": "TheCareerArchitect/1.0" } });
     if (!r.ok) return [];
     const data = await r.json();
-    const okLoc = (loc) => {
-      const l = (loc || "").toLowerCase();
-      if (!l) return true;
-      if (country === "ca") return /canada|worldwide|anywhere|americas|north america/.test(l);
-      return /usa|united states|worldwide|anywhere|americas|north america|us only|us-/.test(l) || !/(europe|emea|asia|india|uk only|latam only|africa)/.test(l);
-    };
     return (data.jobs || [])
-      .filter((j) => okLoc(j.candidate_required_location))
+      .filter((j) => usCanadaOk(j.candidate_required_location))
       .map((j) => ({
         id: "rmtv-" + j.id, external: true, source: "Remotive",
         title: j.title || "", company: j.company_name || "",
@@ -84,8 +78,67 @@ async function fetchRemotive(what, country) {
   } catch (e) { console.error("Remotive failed:", e); return []; }
 }
 
-// Pulls live job listings from multiple free sources (Adzuna + Remotive), merges
-// and de-duplicates them. Adds many more remote IT/cloud/healthcare-tech roles.
+// Keep US/Canada-friendly remote roles, drop region-locked ones (Europe, UK, India...).
+function usCanadaOk(loc) {
+  const l = (loc || "").toLowerCase();
+  if (!l) return true;
+  if (/(usa|u\.s|united states|america|canada|north america|worldwide|anywhere|remote)/.test(l)) return true;
+  if (/(europe|emea|uk|united kingdom|germany|france|spain|india|asia|latam|africa|australia|philippines|brazil|argentina)/.test(l)) return false;
+  return true;
+}
+function relevant(text, words) {
+  if (!words.length) return true;
+  const t = (text || "").toLowerCase();
+  return words.some((w) => t.includes(w));
+}
+const stripHtml = (s) => (s || "").replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/gi, " ").replace(/\s+/g, " ").trim();
+
+// ---- Source 3: RemoteOK (free, no key, remote tech) ----
+async function fetchRemoteOK(what) {
+  try {
+    const r = await fetch("https://remoteok.com/api", { headers: { "User-Agent": "TheCareerArchitect/1.0 (+https://thecareerarchitect.org)" } });
+    if (!r.ok) return [];
+    const arr = await r.json();
+    const words = what.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    return arr.slice(1)
+      .filter((j) => (j.position || j.title))
+      .filter((j) => relevant((j.position || j.title || "") + " " + (j.tags || []).join(" "), words) && usCanadaOk(j.location))
+      .slice(0, 40)
+      .map((j) => ({
+        id: "rok-" + j.id, external: true, source: "RemoteOK",
+        title: j.position || j.title || "", company: j.company || "",
+        location: j.location || "Remote", category: (j.tags || [])[0] || "",
+        work_mode: "Remote", employment_type: "Full-time",
+        salary_min: j.salary_min || null, salary_max: j.salary_max || null, salary_currency: "USD",
+        description: stripHtml(j.description), apply_url: j.url || j.apply_url || "", created_at: j.date || null,
+      }));
+  } catch (e) { console.error("RemoteOK failed:", e); return []; }
+}
+
+// ---- Source 4: Arbeitnow (free, no key) ----
+async function fetchArbeitnow(what) {
+  try {
+    const r = await fetch("https://www.arbeitnow.com/api/job-board-api");
+    if (!r.ok) return [];
+    const data = await r.json();
+    const words = what.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    return (data.data || [])
+      .filter((j) => j.remote)
+      .filter((j) => relevant((j.title || "") + " " + (j.tags || []).join(" "), words) && usCanadaOk(j.location))
+      .slice(0, 25)
+      .map((j) => ({
+        id: "arb-" + (j.slug || j.url), external: true, source: "Arbeitnow",
+        title: j.title || "", company: j.company_name || "",
+        location: j.location || "Remote", category: (j.tags || [])[0] || "",
+        work_mode: "Remote", employment_type: (j.job_types || []).join(", ") || "Full-time",
+        salary_min: null, salary_max: null, salary_currency: "USD",
+        description: stripHtml(j.description), apply_url: j.url || "", created_at: null,
+      }));
+  } catch (e) { console.error("Arbeitnow failed:", e); return []; }
+}
+
+// Pulls live job listings from multiple free sources (Adzuna + Remotive + RemoteOK
+// + Arbeitnow), merges and de-duplicates them, US/Canada-focused.
 export default async function handler(req, res) {
   if (req.method !== "POST" && req.method !== "GET") { res.status(405).json({ error: "Method not allowed" }); return; }
   const rl = await rateLimit(req, { limit: 30, windowMs: 60_000 });
@@ -98,14 +151,16 @@ export default async function handler(req, res) {
     const country = ["us", "ca", "gb"].includes((q.country || "").toString()) ? q.country : "us";
     const remote = q.remote !== false && q.remote !== "false";
 
-    const [adz, rmt] = await Promise.all([
+    const [adz, rmt, rok, arb] = await Promise.all([
       fetchAdzuna(what, where, country, remote),
       fetchRemotive(what, country),
+      fetchRemoteOK(what),
+      fetchArbeitnow(what),
     ]);
 
-    // Merge + de-dupe by title+company.
+    // Merge + de-dupe by title+company (curated remote sources first).
     const seen = new Set();
-    let merged = [...rmt, ...adz].filter((j) => {
+    let merged = [...rmt, ...rok, ...adz, ...arb].filter((j) => {
       const k = (j.title + "|" + j.company).toLowerCase().replace(/\s+/g, " ").trim();
       if (!j.title || seen.has(k)) return false;
       seen.add(k);
