@@ -240,6 +240,15 @@ drop policy if exists "ai_usage own read" on public.ai_usage;
 create policy "ai_usage own read" on public.ai_usage for select using (auth.uid() = user_id);
 -- (writes come from the server via the service role)
 
+-- Atomic monthly-usage increment (avoids race conditions when a user fires
+-- concurrent AI requests). Called by the server via rpc('bump_ai_usage', ...).
+create or replace function public.bump_ai_usage(p_user uuid, p_month text, p_feature text)
+returns void language sql security definer set search_path = public as $$
+  insert into public.ai_usage (user_id, month, feature, count)
+  values (p_user, p_month, p_feature, 1)
+  on conflict (user_id, month, feature) do update set count = public.ai_usage.count + 1;
+$$;
+
 -- ---------- Bootstrap your first admin ----------
 -- After you sign up (via admin.html or agent.html), run THIS with your email to
 -- grant yourself admin (run it as the postgres role in the SQL editor):
