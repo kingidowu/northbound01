@@ -50,7 +50,7 @@
     </div>
 
     <div id="notConfigured" class="notice notice-warn hidden">
-      Not connected yet. Add Supabase keys in <code>config.js</code> and run <code>supabase/schema.sql</code>.
+      Account sign in is temporarily unavailable. Please try again later.
     </div>
 
     <section class="auth-wrap card" id="authCard">
@@ -113,6 +113,12 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function msg(el,t,k){ el.className="notice notice-"+k; el.textContent=t; el.classList.remove("hidden"); }
+function authError(error){
+  if(error instanceof TypeError || /failed to fetch|networkerror|network request failed/i.test(error?.message || "")){
+    return "The account service is unreachable right now. Please try again later.";
+  }
+  return error?.message || "Authentication failed.";
+}
 
 let sb=null, user=null, mode="signin";
 if(SUPABASE_URL && SUPABASE_ANON_KEY){ sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
@@ -134,7 +140,7 @@ $("authBtn").onclick = async ()=>{
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if(error) throw error;
     }
-  }catch(e){ msg($("authMsg"), e.message || "Authentication failed.", "err"); }
+  }catch(e){ msg($("authMsg"), authError(e), "err"); }
   $("authBtn").disabled=false;
 };
 $("forgot").onclick = async ()=>{
@@ -145,7 +151,7 @@ $("forgot").onclick = async ()=>{
     const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + "/reset.html" });
     if(error) throw error;
     msg($("authMsg"),"Check your email for a password reset link.","ok");
-  }catch(e){ msg($("authMsg"), e.message || "Couldn't send reset email.", "err"); }
+  }catch(e){ msg($("authMsg"), authError(e), "err"); }
   $("forgot").disabled=false;
 };
 $("signOut").onclick = async ()=>{ await sb.auth.signOut(); };
