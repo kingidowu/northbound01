@@ -135,7 +135,7 @@ $("authBtn").onclick = async ()=>{
     if(mode==="signup"){
       const { data, error } = await sb.auth.signUp({ email, password });
       if(error) throw error;
-      if(!data.session){ msg($("authMsg"),"Account created. Check your email to confirm, then sign in.","ok"); setMode("signin"); }
+      if(!data.session){ setMode("signin"); msg($("authMsg"),"Account created. Check your email to confirm, then sign in.","ok"); }
     } else {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if(error) throw error;
