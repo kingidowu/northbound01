@@ -133,7 +133,6 @@ export default async function handler(req, res) {
     job.category,
     job.experience,
     salaryStr,
-    job.visa_sponsorship ? "Visa sponsorship" : "",
   ].filter(Boolean);
 
   const cleanApply = safeUrl(job.apply_url);
@@ -146,6 +145,7 @@ export default async function handler(req, res) {
     <p style="font-size:1.1rem;color:var(--ink);font-weight:600">${esc(job.company)}${job.location ? ` · ${esc(job.location)}` : ""}</p>
     <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin:1.1rem 0">
       ${chips.map((c) => `<span style="background:var(--paper-2);border:1px solid var(--line);border-radius:999px;padding:.3rem .8rem;font-size:.82rem;color:var(--slate)">${esc(c)}</span>`).join("")}
+      ${job.visa_sponsorship ? `<strong style="background:#fff0f1;border:1px solid #bd2435;border-radius:999px;padding:.3rem .8rem;font-size:.82rem;color:#a31529;font-weight:800">VISA SPONSORSHIP OFFERED</strong>` : ""}
     </div>
     <a class="btn btn-accent" href="${esc(applyHref)}"${applyTarget} style="margin:.4rem 0 2rem">Apply now</a>
     <article style="white-space:pre-wrap;line-height:1.7;color:var(--ink-2)">${esc(job.description)}</article>

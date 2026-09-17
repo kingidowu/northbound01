@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { rateLimit } from "../lib/ratelimit.js";
+import { sponsorshipEvidence } from "../lib/visa-sponsorship.js";
 
 const ai = new Anthropic();
 
@@ -195,10 +196,12 @@ export default async function handler(req, res) {
     const what = (q.what || "").toString().slice(0, 120).trim();
     const where = (q.where || "").toString().slice(0, 120).trim();
     const country = ["us", "ca", "gb"].includes((q.country || "").toString()) ? q.country : "us";
-    const remote = q.remote !== false && q.remote !== "false";
+    const sponsorshipOnly = q.sponsorship === true || q.sponsorship === "true";
+    const remote = !sponsorshipOnly && q.remote !== false && q.remote !== "false";
 
-    const [adz, rmt, rok, arb, jbc, muse] = await Promise.all([
+    const [adz, sponsorAdz, rmt, rok, arb, jbc, muse] = await Promise.all([
       fetchAdzuna(what, where, country, remote),
+      sponsorshipOnly ? fetchAdzuna(`${what} visa sponsorship`.trim(), where, country, false) : Promise.resolve([]),
       fetchRemotive(what, country),
       fetchRemoteOK(what),
       fetchArbeitnow(what),
@@ -208,7 +211,11 @@ export default async function handler(req, res) {
 
     // Merge + de-dupe by title+company (curated remote sources first).
     const seen = new Set();
-    let merged = [...rmt, ...jbc, ...rok, ...muse, ...adz, ...arb].filter((j) => {
+    const candidates = sponsorshipOnly ? [...sponsorAdz, ...adz, ...rmt, ...jbc, ...rok, ...muse, ...arb] : [...rmt, ...jbc, ...rok, ...muse, ...adz, ...arb];
+    let merged = candidates.map(j => {
+      const evidence = sponsorshipEvidence(`${j.title}. ${j.description}`);
+      return { ...j, visa_sponsorship: !!evidence, sponsorship_evidence: evidence };
+    }).filter((j) => {
       const k = (j.title + "|" + j.company).toLowerCase().replace(/\s+/g, " ").trim();
       if (!j.title || seen.has(k)) return false;
       seen.add(k);
@@ -221,6 +228,10 @@ export default async function handler(req, res) {
       if (detected.length) merged = detected;
     }
 
+    if (sponsorshipOnly) {
+      const focusWords = what.toLowerCase().split(/\s+/).filter(word => word.length > 2 && !["visa", "sponsorship", "sponsor"].includes(word));
+      merged = merged.filter(j => j.visa_sponsorship && relevant(j.title + " " + j.category, focusWords));
+    }
     merged = merged.slice(0, 80);
     if (q.relevance) merged = await filterRelevant(merged);
     res.status(200).json({ jobs: merged, configured: true, count: merged.length });

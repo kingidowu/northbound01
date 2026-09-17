@@ -45,16 +45,18 @@ export default async function handler(req, res) {
     for (const s of searches || []) {
       processed++;
       try {
+        const sponsorship = String(s.what||"").startsWith("visa:");
+        const focus = sponsorship ? String(s.what).slice(5).trim() : s.what;
         const r = await fetch(`${SITE}/api/external-jobs`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ what: s.what, country: s.country || "us", relevance: false }),
+          body: JSON.stringify({ what: focus, country: s.country || "us", relevance: false, sponsorship, remote: !sponsorship }),
         });
         const d = await r.json();
         const jobs = d.jobs || [];
         const seen = new Set(s.seen_ids || []);
         const fresh = jobs.filter((j) => j.id && !seen.has(j.id)).slice(0, 8);
         if (fresh.length) {
-          await sendAlert(s.email, s.what, fresh);
+          await sendAlert(s.email, sponsorship ? `visa-sponsored ${focus}` : s.what, fresh);
           sent++;
         }
         const newSeen = [...new Set([...jobs.map((j) => j.id), ...(s.seen_ids || [])])].filter(Boolean).slice(0, 300);

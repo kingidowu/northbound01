@@ -208,12 +208,16 @@ async function loadAlerts(){
   const box=$("alerts");
   if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
   if(!data || !data.length){ box.innerHTML='<p class="muted">No alerts yet. On the <a href="jobs.html">job board</a>, tap 🔔 Email me new matches.</p>'; return; }
-  box.innerHTML = data.map(a=>`
+  box.innerHTML = data.map(a=>{
+    const sponsor=String(a.what||"").startsWith("visa:");
+    const title=sponsor?String(a.what).slice(5):a.what;
+    return `
     <div class="row">
-      <div><div class="t">${esc(a.what)} <span class="badge ${a.active?'badge-verified':'badge-soft'}">${a.active?'on':'off'}</span></div>
+      <div><div class="t">${esc(title)} ${sponsor?'<strong style="color:#a31529;font-weight:800;font-size:.78rem">VISA SPONSORSHIP</strong>':""} <span class="badge ${a.active?'badge-verified':'badge-soft'}">${a.active?'on':'off'}</span></div>
       <div class="s">${esc((a.country||'us').toUpperCase())}${a.last_run?' · last checked '+esc((a.last_run||'').slice(0,10)):''}</div></div>
       <button class="link-btn" data-del-alert="${a.id}">Delete</button>
-    </div>`).join("");
+    </div>`;
+  }).join("");
   box.querySelectorAll("[data-del-alert]").forEach(b=>b.onclick=async ()=>{ if(!confirm("Delete this alert?"))return; await sb.from("saved_searches").delete().eq("id",b.dataset.delAlert); loadAlerts(); });
 }
 

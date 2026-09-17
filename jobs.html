@@ -38,6 +38,8 @@
   .web-focus{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
   .fchip{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--white);border-radius:999px;padding:.4rem .9rem;cursor:pointer;color:var(--slate)}
   .fchip.on{border-color:var(--emerald);color:var(--ink);background:rgba(22,137,91,.08);font-weight:600}
+  .visa-flag{display:inline-block;border:1px solid #bd2435;border-radius:7px;background:#fff0f1;color:#a31529;font-family:"Space Grotesk",sans-serif;font-size:.8rem;font-weight:800;letter-spacing:.02em;padding:.28rem .55rem}
+  .visa-evidence{color:#8d1a2a;font-size:.8rem;line-height:1.4;margin-top:.2rem}
 </style>
 </head>
 <body>
@@ -103,8 +105,8 @@
     <div style="margin-top:2.6rem;border-top:1px solid var(--line);padding-top:1.6rem">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap">
         <div>
-          <h2 style="font-size:1.3rem">Fully remote roles from the web</h2>
-          <p class="muted" style="font-size:.9rem;margin-top:.2rem">Live remote listings pulled from across the internet, curated to your field.</p>
+          <h2 id="webHeading" style="font-size:1.3rem">Fully remote roles from the web</h2>
+          <p class="muted" id="webIntro" style="font-size:.9rem;margin-top:.2rem">Live remote listings pulled from across the internet, curated to your field.</p>
         </div>
         <div style="display:flex;gap:.5rem;align-items:center">
           <select id="webCountry" style="font:inherit;border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;background:var(--paper)"><option value="us">United States</option><option value="ca">Canada</option></select>
@@ -214,7 +216,7 @@ function card(j){
     : '<span class="badge badge-soft">Recruiter-posted</span>';
   const meta = [j.work_mode, j.employment_type, j.category, j.experience].filter(Boolean)
     .map(m=>`<span class="chip">${esc(m)}</span>`).join("");
-  const visa = j.visa_sponsorship ? '<span class="chip" style="color:var(--emerald)">Visa sponsorship</span>' : "";
+  const visa = j.visa_sponsorship ? '<strong class="visa-flag" title="Recruiter marked this role as offering sponsorship">VISA SPONSORSHIP OFFERED</strong>' : "";
   const apply = `<button class="btn btn-accent" data-apply="${esc(j.id)}">Apply</button>`;
   const m = matchMap ? matchMap[j.id] : null;
   const matchBadge = m ? `<span class="match-badge" style="background:${m.score>=70?'#16895B':m.score>=45?'#D99A28':'#5A6280'}">${m.score}% match</span>` : "";
@@ -312,7 +314,7 @@ function openApply(id){
   $("applyTitle").textContent = j.title;
   $("applyCo").textContent = j.company + (j.location ? " · " + j.location : "");
   const meta = [j.work_mode, j.employment_type, j.category, j.experience].filter(Boolean).map(m=>`<span class="chip">${esc(m)}</span>`).join("")
-    + (j.visa_sponsorship ? '<span class="chip" style="color:var(--emerald)">Visa sponsorship</span>' : "")
+    + (j.visa_sponsorship ? '<strong class="visa-flag">VISA SPONSORSHIP OFFERED</strong>' : "")
     + (salary(j) ? `<span class="chip">${esc(salary(j))}</span>` : "");
   $("applyMeta").innerHTML = meta;
   $("applyDesc").textContent = j.description || "No description provided.";
@@ -423,13 +425,15 @@ if(sb) sb.auth.onAuthStateChange(()=>refreshUser());
 
 /* ---- live jobs from the web (Adzuna) ---- */
 function webCard(j){
+  const visa = j.visa_sponsorship ? `<strong class="visa-flag" title="This listing explicitly offers visa sponsorship">VISA SPONSORSHIP OFFERED</strong>` : "";
+  const evidence = j.visa_sponsorship && j.sponsorship_evidence ? `<div class="visa-evidence">Listing says: ${esc(j.sponsorship_evidence)}</div>` : "";
   const meta = [j.work_mode, j.employment_type, j.category].filter(Boolean).map(m=>`<span class="chip">${esc(m)}</span>`).join("");
   return `<article class="card job">
     <div class="job-top">
       <div><h3>${esc(j.title)}</h3><div class="co">${esc(j.company)}${j.location?` · ${esc(j.location)}`:""}</div></div>
       <span class="badge badge-soft">🌐 Web</span>
     </div>
-    <div class="job-meta">${meta}</div>
+    <div class="job-meta">${meta}${visa}</div>${evidence}
     <p class="job-desc">${esc((j.description||"").slice(0,240))}${(j.description||"").length>240?"…":""}</p>
     <div class="job-foot"><span class="sal">${esc(salary(j))}</span>
       <div style="display:flex;gap:.8rem;align-items:center">
@@ -454,34 +458,43 @@ function renderFocusChips(){
   $("webFocus").innerHTML = FOCUS.map(f=>`<button class="fchip ${f.key===webFocus?'on':''}" data-focus="${f.key}">${esc(f.label)}</button>`).join("");
   $("webFocus").querySelectorAll("[data-focus]").forEach(b=>b.onclick=()=>{ webFocus=b.dataset.focus; localStorage.setItem("ca_web_focus",webFocus); renderFocusChips(); loadWeb(); });
 }
+let webRequestId = 0;
 async function loadWeb(){
+  const requestId = ++webRequestId;
   const f = FOCUS.find(x=>x.key===webFocus) || FOCUS[0];
   const country = $("webCountry").value; localStorage.setItem("ca_web_country", country);
   const q = $("q").value.trim();
+  const sponsorship = $("visa").value === "yes";
+  $("webHeading").textContent = sponsorship ? "Jobs offering visa sponsorship" : "Fully remote roles from the web";
+  $("webIntro").textContent = sponsorship ? "Only listings that explicitly offer visa sponsorship are shown. Check the employer’s current eligibility requirements before applying." : "Live remote listings pulled from across the internet, curated to your field.";
   $("webResults").innerHTML='<div class="empty">Curating live roles…</div>';
   try{
     const res = await fetch("/api/external-jobs",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ what: q || f.what, country, relevance:true })});
+      body:JSON.stringify({ what: q || f.what, country, sponsorship, remote:!sponsorship, relevance:true })});
     const d = await res.json();
+    if(requestId!==webRequestId) return;
     if(d.configured===false){ $("webResults").innerHTML='<div class="empty">Web jobs aren\'t connected yet.</div>'; }
-    else if(!d.jobs || !d.jobs.length){ $("webResults").innerHTML='<div class="empty">No matching web roles - try another focus.</div>'; }
+    else if(!d.jobs || !d.jobs.length){ lastWebJobs=[]; $("webResults").innerHTML=sponsorship?'<div class="empty">No current listings explicitly offer visa sponsorship for this search. Try another field or country.</div>':'<div class="empty">No matching web roles - try another focus.</div>'; }
     else { lastWebJobs = d.jobs; $("webResults").innerHTML = d.jobs.map(webCard).join(""); }
-  }catch(e){ $("webResults").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+  }catch(e){ if(requestId===webRequestId) $("webResults").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
 }
 $("webCountry").value = localStorage.getItem("ca_web_country") || "us";
 $("webCountry").addEventListener("change", loadWeb);
 $("webBtn").addEventListener("click", loadWeb);
+$("visa").addEventListener("change", loadWeb);
+$("searchBtn").addEventListener("click", loadWeb);
 $("webAlert").addEventListener("click", async ()=>{
   if(!user){ if(confirm("Sign in to get job alerts by email. Go to your account?")) location.href="seeker.html"; return; }
   const f = FOCUS.find(x=>x.key===webFocus) || FOCUS[0];
   const what = ($("q").value.trim() || f.what);
+  const sponsorship = $("visa").value === "yes";
   const country = $("webCountry").value;
   const m = $("webAlertMsg"); const btn=$("webAlert"), o=btn.textContent; btn.disabled=true; btn.textContent="Saving…";
   try{
     const seen = (lastWebJobs||[]).map(j=>j.id).filter(Boolean);
-    const { error } = await sb.from("saved_searches").insert({ user_id:user.id, email:user.email, what, country, seen_ids:seen });
+    const { error } = await sb.from("saved_searches").insert({ user_id:user.id, email:user.email, what:sponsorship?`visa:${what}`:what, country, seen_ids:seen });
     if(error) throw error;
-    m.className="notice notice-ok"; m.textContent=`✓ Alert set for "${what}". We'll email you new matches as they appear. Manage it in My account.`; m.classList.remove("hidden");
+    m.className="notice notice-ok"; m.textContent=`✓ ${sponsorship?"Visa sponsorship alert":"Alert"} set for "${what}". We'll email you new matches as they appear. Manage it in My account.`; m.classList.remove("hidden");
   }catch(e){ m.className="notice notice-err"; m.textContent=e.message||"Couldn't set alert."; m.classList.remove("hidden"); }
   btn.disabled=false; btn.textContent=o;
 });
@@ -549,6 +562,7 @@ $("tlSave").onclick = async ()=>{
   $("tlSave").disabled=false;
 };
 
+if(new URLSearchParams(location.search).get("sponsorship")==="yes") $("visa").value="yes";
 load().then(refreshUser).then(loadWeb);
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
