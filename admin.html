@@ -322,7 +322,7 @@ async function loadKnowledge(){
       <div class="knowledge-body">
         ${e.seniority?`<p><b>Experience level:</b> ${esc(e.seniority)}</p>`:""}
         ${ats?.verdict?`<h3>ATS assessment · ${esc(ats.score_basis||"ATS estimate")}</h3><p>${esc(ats.verdict)}</p>`:""}
-        ${score===null?'<p>ATS score unavailable for this older entry. Scan the original résumé again to add a measured score and job fit.</p>':""}
+        ${score===null?'<p>ATS score unavailable for this older entry. Scan the original résumé again to add a scanner estimate and job fit.</p>':""}
         ${apply.length?`<h3>Jobs to apply for now</h3>${roleCards(apply)}`:""}
         ${develop.length?`<h3>Roles to build toward</h3>${roleCards(develop)}`:""}
         ${!roles.length?`<h3>Potential job types</h3><div class="chips">${chips(e.target_roles)}</div>`:""}
