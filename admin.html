@@ -140,7 +140,7 @@
 
       <div class="card">
         <h2>Assessments</h2>
-        <p class="card-sub">Generate, review, download, and send a candidate’s report, tailored résumé, and private interview prep link.</p>
+        <p class="card-sub">New intakes are emailed three PDFs automatically. Review delivery status, download PDFs, or resend when needed.</p>
         <div class="grid" id="assessments"><p class="muted">Loading…</p></div>
       </div>
 
@@ -295,12 +295,14 @@ async function loadAssessments(){
   if(!data || !data.length){ box.innerHTML='<p class="muted">No submissions yet.</p>'; return; }
   box.innerHTML = data.map(a=>{
     const ready=!!a.data?.package, sent=!!a.data?.delivery?.sent_at, hasResume=String(a.data?.resume||"").length>=80;
+    const status=a.data?.delivery_status||"legacy",busy=["processing","sending"].includes(status);
+    const label=sent?"Sent":status==="pending"?"Queued":busy?"Preparing email":status==="retry"?"Retry scheduled":status==="failed"?"Delivery failed":ready?"Ready to review":hasResume?"New intake":"No résumé";
     return `<div class="row" style="display:block">
-      <div style="display:flex;justify-content:space-between;gap:1rem"><div><div class="t">${esc(a.full_name||"-")} <span class="badge badge-soft">${sent?"Sent":ready?"Ready to review":hasResume?"New intake":"No résumé"}</span></div><div class="s">${esc(a.field||"")}${a.email?" · "+esc(a.email):""} · ${esc((a.created_at||"").slice(0,10))}</div></div></div>
+      <div style="display:flex;justify-content:space-between;gap:1rem"><div><div class="t">${esc(a.full_name||"-")} <span class="badge badge-soft">${label}</span></div><div class="s">${esc(a.field||"")}${a.email?" · "+esc(a.email):""} · ${esc((a.created_at||"").slice(0,10))}</div></div></div>
       <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.7rem">
-        ${hasResume?`<button class="link-btn" data-pkg="generate" data-id="${a.id}">${ready?"Regenerate":"Generate package"}</button>`:`<span class="muted">Ask candidate to resubmit with a résumé.</span>`}
-        ${ready?`<button class="link-btn" data-pkg="review" data-id="${a.id}">Review</button><button class="link-btn" data-pkg="report" data-id="${a.id}">Report PDF</button><button class="link-btn" data-pkg="resume" data-id="${a.id}">Résumé PDF</button><button class="link-btn" data-pkg="send" data-id="${a.id}">${sent?"Send again":"Send to candidate"}</button>`:""}
-      </div><div id="package-${a.id}" class="muted" style="margin-top:.7rem"></div>
+        ${hasResume?(busy?"":`<button class="link-btn" data-pkg="generate" data-id="${a.id}">${ready?"Regenerate":"Generate package"}</button>`):`<span class="muted">Ask candidate to resubmit with a résumé.</span>`}
+        ${ready?`<button class="link-btn" data-pkg="review" data-id="${a.id}">Review</button><button class="link-btn" data-pkg="report" data-id="${a.id}">Report PDF</button><button class="link-btn" data-pkg="resume" data-id="${a.id}">Résumé PDF</button><button class="link-btn" data-pkg="prep" data-id="${a.id}">Interview prep PDF</button>${busy?"":`<button class="link-btn" data-pkg="send" data-id="${a.id}">${sent?"Send again":"Send to candidate"}</button>`}`:""}
+      </div>${a.data?.delivery_error?`<p class="muted">Delivery issue: ${esc(a.data.delivery_error)}</p>`:""}<div id="package-${a.id}" class="muted" style="margin-top:.7rem"></div>
     </div>`;
   }).join("");
   box.querySelectorAll("[data-pkg]").forEach(b=>b.onclick=()=>assessmentAction(b));
@@ -331,9 +333,9 @@ async function assessmentAction(button){
       const d=await packageRequest(id,action==="review"?"get":"generate");
       slot.innerHTML=packagePreview(d.package);
       if(action==="generate"){ await loadAssessments(); document.getElementById("package-"+id).innerHTML=packagePreview(d.package); }
-    }else if(action==="report"||action==="resume"){
+    }else if(action==="report"||action==="resume"||action==="prep"){
       const blob=await packageRequest(id,"pdf",action),url=URL.createObjectURL(blob),link=document.createElement("a");
-      link.href=url;link.download=action==="resume"?"tailored-resume.pdf":"career-report.pdf";link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
+      link.href=url;link.download=action==="resume"?"tailored-resume.pdf":action==="prep"?"interview-prep.pdf":"career-report.pdf";link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
       slot.textContent="PDF downloaded for review.";
     }else if(action==="send"){
       if(!confirm("Send both PDFs and a private interview prep link to this candidate?"))return;

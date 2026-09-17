@@ -1,4 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { waitUntil } from "@vercel/functions";
+import { processAssessment } from "../lib/assessment-delivery.js";
 import { getServiceClient, retrieveContext, ingest } from "../lib/knowledge.js";
 import { rateLimit } from "../lib/ratelimit.js";
 
@@ -58,11 +60,12 @@ export default async function handler(req, res) {
     if (!sb) { res.status(503).json({ error: "Submission service unavailable. Please try again." }); return; }
     const { data: saved, error: saveError } = await sb.from("assessments").insert({
       full_name: String(a.full_name).slice(0,200), email: String(a.email).slice(0,320),
-      field: String(a.field||"").slice(0,200), data: a,
+      field: String(a.field||"").slice(0,200), data: { ...a, delivery_status: "pending", delivery_attempts: 0 },
     }).select("id").single();
     if (saveError || !saved) { console.error("Assessment save failed", saveError); res.status(503).json({ error: "Could not save your assessment. Please try again." }); return; }
 
     savedId = saved.id;
+    waitUntil(processAssessment(saved.id, sb).catch((error) => console.error("Assessment background delivery failed", saved.id, error)));
     // Build a compact profile from the assessment answers (general career —
     // tolerant of whichever fields the form sends).
     const profile = [

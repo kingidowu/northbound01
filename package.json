@@ -7,6 +7,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
     "@supabase/supabase-js": "^2.45.0",
+    "@vercel/functions": "^3.9.8",
     "pdf-lib": "^1.17.1"
   }
 }

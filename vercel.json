@@ -5,7 +5,8 @@
     { "source": "/career/:slug", "destination": "/api/career-guide?slug=:slug" }
   ],
   "crons": [
-    { "path": "/api/cron-job-alerts", "schedule": "0 13 * * *" }
+    { "path": "/api/cron-job-alerts", "schedule": "0 13 * * *" },
+    { "path": "/api/cron-assessment-delivery", "schedule": "0 2 * * *" }
   ],
   "headers": [
     {
