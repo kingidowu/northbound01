@@ -210,7 +210,7 @@ async function loadAlerts(){
   if(!data || !data.length){ box.innerHTML='<p class="muted">No alerts yet. On the <a href="jobs.html">job board</a>, tap 🔔 Email me new matches.</p>'; return; }
   box.innerHTML = data.map(a=>{
     const sponsor=String(a.what||"").startsWith("visa:");
-    const title=sponsor?String(a.what).slice(5):a.what;
+    const title=sponsor?(String(a.what).slice(5)||"All fields"):a.what;
     return `
     <div class="row">
       <div><div class="t">${esc(title)} ${sponsor?'<strong style="color:#a31529;font-weight:800;font-size:.78rem">VISA SPONSORSHIP</strong>':""} <span class="badge ${a.active?'badge-verified':'badge-soft'}">${a.active?'on':'off'}</span></div>

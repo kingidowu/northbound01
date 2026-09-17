@@ -446,6 +446,7 @@ function webCard(j){
 // Keep queries short - Adzuna requires ALL keywords (AND), and the server
 // appends "remote", so 1-2 core words per focus returns the most matches.
 const FOCUS = [
+  { key:"all",        label:"All fields",     what:"" },
   { key:"software",   label:"Software",       what:"software engineer" },
   { key:"cloud",      label:"Cloud / DevOps", what:"cloud engineer" },
   { key:"data",       label:"Data / AI",      what:"data engineer" },
@@ -481,20 +482,23 @@ async function loadWeb(){
 $("webCountry").value = localStorage.getItem("ca_web_country") || "us";
 $("webCountry").addEventListener("change", loadWeb);
 $("webBtn").addEventListener("click", loadWeb);
-$("visa").addEventListener("change", loadWeb);
+$("visa").addEventListener("change", ()=>{
+  if($("visa").value==="yes"){ webFocus="all"; localStorage.setItem("ca_web_focus",webFocus); renderFocusChips(); }
+  loadWeb();
+});
 $("searchBtn").addEventListener("click", loadWeb);
 $("webAlert").addEventListener("click", async ()=>{
   if(!user){ if(confirm("Sign in to get job alerts by email. Go to your account?")) location.href="seeker.html"; return; }
   const f = FOCUS.find(x=>x.key===webFocus) || FOCUS[0];
-  const what = ($("q").value.trim() || f.what);
+  const what = ($("q").value.trim() || f.what || "");
   const sponsorship = $("visa").value === "yes";
   const country = $("webCountry").value;
   const m = $("webAlertMsg"); const btn=$("webAlert"), o=btn.textContent; btn.disabled=true; btn.textContent="Saving…";
   try{
     const seen = (lastWebJobs||[]).map(j=>j.id).filter(Boolean);
-    const { error } = await sb.from("saved_searches").insert({ user_id:user.id, email:user.email, what:sponsorship?`visa:${what}`:what, country, seen_ids:seen });
+    const { error } = await sb.from("saved_searches").insert({ user_id:user.id, email:user.email, what:sponsorship?`visa:${what}`:(what||"remote"), country, seen_ids:seen });
     if(error) throw error;
-    m.className="notice notice-ok"; m.textContent=`✓ ${sponsorship?"Visa sponsorship alert":"Alert"} set for "${what}". We'll email you new matches as they appear. Manage it in My account.`; m.classList.remove("hidden");
+    m.className="notice notice-ok"; m.textContent=`✓ ${sponsorship?"Visa sponsorship alert":"Alert"} set for "${what||"all fields"}". We'll email you new matches as they appear. Manage it in My account.`; m.classList.remove("hidden");
   }catch(e){ m.className="notice notice-err"; m.textContent=e.message||"Couldn't set alert."; m.classList.remove("hidden"); }
   btn.disabled=false; btn.textContent=o;
 });
@@ -562,7 +566,7 @@ $("tlSave").onclick = async ()=>{
   $("tlSave").disabled=false;
 };
 
-if(new URLSearchParams(location.search).get("sponsorship")==="yes") $("visa").value="yes";
+if(new URLSearchParams(location.search).get("sponsorship")==="yes"){ $("visa").value="yes"; webFocus="all"; renderFocusChips(); }
 load().then(refreshUser).then(loadWeb);
 </script>
 <script defer src="/_vercel/insights/script.js"></script>

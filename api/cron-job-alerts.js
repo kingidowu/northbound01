@@ -56,7 +56,7 @@ export default async function handler(req, res) {
         const seen = new Set(s.seen_ids || []);
         const fresh = jobs.filter((j) => j.id && !seen.has(j.id)).slice(0, 8);
         if (fresh.length) {
-          await sendAlert(s.email, sponsorship ? `visa-sponsored ${focus}` : s.what, fresh);
+          await sendAlert(s.email, sponsorship ? (focus ? `visa-sponsored ${focus}` : "visa sponsorship") : s.what, fresh);
           sent++;
         }
         const newSeen = [...new Set([...jobs.map((j) => j.id), ...(s.seen_ids || [])])].filter(Boolean).slice(0, 300);
