@@ -140,7 +140,7 @@
 
       <div class="card">
         <h2>Assessments</h2>
-        <p class="card-sub">Every intake submission from the homepage.</p>
+        <p class="card-sub">Generate, review, download, and send a candidate’s report, tailored résumé, and private interview prep link.</p>
         <div class="grid" id="assessments"><p class="muted">Loading…</p></div>
       </div>
 
@@ -289,15 +289,57 @@ async function loadApplications(){
 }
 
 async function loadAssessments(){
-  const { data, error } = await sb.from("assessments").select("id, full_name, email, field, created_at").order("created_at",{ascending:false}).limit(100);
+  const { data, error } = await sb.from("assessments").select("id, full_name, email, field, created_at, data").order("created_at",{ascending:false}).limit(100);
   const box=$("assessments");
   if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
   if(!data || !data.length){ box.innerHTML='<p class="muted">No submissions yet.</p>'; return; }
-  box.innerHTML = data.map(a=>`
-    <div class="row">
-      <div><div class="t">${esc(a.full_name||"-")}</div><div class="s">${esc(a.field||"")}${a.email?" · "+esc(a.email):""}</div></div>
-      <div class="s">${esc((a.created_at||"").slice(0,10))}</div>
-    </div>`).join("");
+  box.innerHTML = data.map(a=>{
+    const ready=!!a.data?.package, sent=!!a.data?.delivery?.sent_at, hasResume=String(a.data?.resume||"").length>=80;
+    return `<div class="row" style="display:block">
+      <div style="display:flex;justify-content:space-between;gap:1rem"><div><div class="t">${esc(a.full_name||"-")} <span class="badge badge-soft">${sent?"Sent":ready?"Ready to review":hasResume?"New intake":"No résumé"}</span></div><div class="s">${esc(a.field||"")}${a.email?" · "+esc(a.email):""} · ${esc((a.created_at||"").slice(0,10))}</div></div></div>
+      <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.7rem">
+        ${hasResume?`<button class="link-btn" data-pkg="generate" data-id="${a.id}">${ready?"Regenerate":"Generate package"}</button>`:`<span class="muted">Ask candidate to resubmit with a résumé.</span>`}
+        ${ready?`<button class="link-btn" data-pkg="review" data-id="${a.id}">Review</button><button class="link-btn" data-pkg="report" data-id="${a.id}">Report PDF</button><button class="link-btn" data-pkg="resume" data-id="${a.id}">Résumé PDF</button><button class="link-btn" data-pkg="send" data-id="${a.id}">${sent?"Send again":"Send to candidate"}</button>`:""}
+      </div><div id="package-${a.id}" class="muted" style="margin-top:.7rem"></div>
+    </div>`;
+  }).join("");
+  box.querySelectorAll("[data-pkg]").forEach(b=>b.onclick=()=>assessmentAction(b));
+}
+
+async function packageRequest(id,action,kind,resend=false){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session)throw Error("Sign in again to continue.");
+  const r=await fetch("/api/assessment-package",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+session.access_token},body:JSON.stringify({id,action,kind,resend})});
+  if(action==="pdf"&&r.ok)return await r.blob();
+  const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||"Action failed");return d;
+}
+function packagePreview(pkg){
+  const a=pkg.ats,g=pkg.guide;
+  const list=items=>`<ul>${(items||[]).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+  return `<details open><summary><b>ATS readiness estimate: ${Number(a.ats_score)||0}/100</b> · ${esc(a.verdict||"")}</summary>
+    <p>Estimated résumé readiness; this is not a hiring probability.</p><h4>Career assessment</h4><p>${esc(g.overview||"")}</p>
+    <h4>Jobs to apply for</h4><ul>${(a.job_recommendations||[]).map(r=>`<li><b>${r.fit==="apply_now"?"Apply now":"Build toward"}: ${esc(r.title)}</b> — ${esc(r.reason)} ${esc(r.next_step)}</li>`).join("")}</ul>
+    <h4>Action plan</h4>${list(g.action_plan)}<h4>Résumé changes</h4>${list(g.resume_changes)}
+    <h4>Tailored résumé draft</h4><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:400px;overflow:auto">${esc(g.tailored_resume||"")}</pre>
+    <h4>Interview prep</h4><ol>${(g.interview_questions||[]).map(q=>`<li><b>${esc(q.question)}</b><br>${esc(q.why_asked)}<br>${esc(q.answer_guidance)}</li>`).join("")}</ol>${list(g.interview_tips)}</details>`;
+}
+async function assessmentAction(button){
+  const id=button.dataset.id,action=button.dataset.pkg,slot=document.getElementById("package-"+id),old=button.textContent;
+  button.disabled=true;button.textContent="Working…";slot.textContent="";
+  try{
+    if(action==="generate"||action==="review"){
+      const d=await packageRequest(id,action==="review"?"get":"generate");
+      slot.innerHTML=packagePreview(d.package);
+      if(action==="generate"){ await loadAssessments(); document.getElementById("package-"+id).innerHTML=packagePreview(d.package); }
+    }else if(action==="report"||action==="resume"){
+      const blob=await packageRequest(id,"pdf",action),url=URL.createObjectURL(blob),link=document.createElement("a");
+      link.href=url;link.download=action==="resume"?"tailored-resume.pdf":"career-report.pdf";link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
+      slot.textContent="PDF downloaded for review.";
+    }else if(action==="send"){
+      if(!confirm("Send both PDFs and a private interview prep link to this candidate?"))return;
+      const d=await packageRequest(id,"send",null,old==="Send again");slot.textContent=d.warning||"Email sent.";loadAssessments();
+    }
+  }catch(error){slot.textContent=error.message;}finally{button.disabled=false;button.textContent=old;}
 }
 
 async function loadKnowledge(){

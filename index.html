@@ -612,6 +612,8 @@
           </div>
           <div class="field"><label>Anything else we should know?</label><textarea name="notes" placeholder="Goals, constraints, deadlines…"></textarea></div>
 
+          <div class="field"><label for="resumeFile">Résumé <span class="req">*</span></label><input id="resumeFile" type="file" accept=".pdf,.txt,text/plain,application/pdf" /><p class="hint">Upload a text-based PDF or TXT file, or paste the full résumé below. Your résumé is used to prepare your report and tailored documents.</p></div>
+          <div class="field"><label for="resumeText">Résumé text <span class="req">*</span></label><textarea id="resumeText" name="resume" required minlength="80" style="min-height:150px" placeholder="Paste your full résumé here, or upload a file above"></textarea></div>
           <div class="field review">
             <label>Quick review</label>
             <dl id="reviewList"></dl>
@@ -735,6 +737,7 @@ function validateStep(){
   // group radios by name; required attr only on first of group
   const checkedRadioNames = new Set();
   for (const el of required){
+    if (el.type==="file") return;
     if (el.type==="radio"){
       const any = stepEl.querySelector(`input[name="${el.name}"]:checked`);
       if (!any) ok=false;
@@ -753,6 +756,7 @@ function showErr(){ steps[current-1].querySelector("[data-err]")?.classList.add(
 function collect(){
   const data={};
   document.querySelectorAll(".form-body input,.form-body select,.form-body textarea").forEach(el=>{
+    if (el.type==="file") return;
     if (el.type==="radio"){ if(el.checked) data[el.name]=el.value; }
     else if (el.type==="checkbox"){ (data[el.name]=data[el.name]||[]); if(el.checked) data[el.name].push(el.value); }
     else if (el.value.trim()) data[el.name]=el.value.trim();
@@ -775,65 +779,48 @@ function buildReview(){
   });
 }
 
+let submittedSnapshot = null;
 async function submit(){
   const payload = collect();
   payload.submitted_at = new Date().toISOString();
-
-  // Fire every configured channel in parallel. Lead is captured if ANY succeeds.
-  const tasks = [];
-
-  // 1) Database - Supabase
-  if (SUPABASE_URL && SUPABASE_ANON_KEY){
-    tasks.push(
-      fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`,{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "apikey":SUPABASE_ANON_KEY,
-          "Authorization":`Bearer ${SUPABASE_ANON_KEY}`,
-          "Prefer":"return=minimal"
-        },
-        body: JSON.stringify(payload)
-      }).then(async r=>{ if(!r.ok) throw new Error("Supabase: "+await r.text()); })
-    );
-  }
-
-  // 2) Email - Web3Forms (flatten arrays so the email reads cleanly)
-  if (WEB3FORMS_KEY){
-    const emailData = {
-      ...payload,
-      access_key: WEB3FORMS_KEY,
-      subject: `New assessment - ${payload.full_name || "Unknown"}`,
-      from_name: `${BRAND} assessment`,
-      challenges: Array.isArray(payload.challenges) ? payload.challenges.join(", ") : payload.challenges
-    };
-    tasks.push(
-      fetch("https://api.web3forms.com/submit",{
-        method:"POST",
-        headers:{ "Content-Type":"application/json", "Accept":"application/json" },
-        body: JSON.stringify(emailData)
-      }).then(async r=>{ if(!r.ok) throw new Error("Web3Forms: "+await r.text()); })
-    );
-  }
-
-  // Nothing configured yet → dev mode: log and confirm so the flow is testable.
-  if (!tasks.length){
-    console.log("Assessment payload (no delivery configured):", payload);
-    return true;
-  }
-
-  const results = await Promise.allSettled(tasks);
-  results.filter(r=>r.status==="rejected").forEach(r=>console.error("Delivery failed:", r.reason));
-  if (!results.some(r=>r.status==="fulfilled")){ showErr(); return false; }
+  const response = await fetch(AI_ENDPOINT, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)});
+  const data = await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(data.error || "Submission failed. Please try again.");
+  submittedSnapshot = data;
   return true;
 }
+
+document.getElementById("resumeFile").addEventListener("change", async event=>{
+  const file = event.target.files?.[0];
+  if(!file) return;
+  const field = document.getElementById("resumeText");
+  try{
+    if(file.size > 5_000_000) throw new Error("Choose a file under 5 MB.");
+    let value;
+    if(file.type === "application/pdf" || /\.pdf$/i.test(file.name)){
+      const pdfjs = await import("https://esm.sh/pdfjs-dist@4.7.76/build/pdf.min.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://esm.sh/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs";
+      const pdf = await pdfjs.getDocument({data:await file.arrayBuffer()}).promise;
+      const pages=[];
+      for(let n=1;n<=pdf.numPages;n++){
+        const page=await pdf.getPage(n);
+        pages.push((await page.getTextContent()).items.map(x=>x.str).join(" "));
+      }
+      value=pages.join("\n");
+    }else if(/\.txt$/i.test(file.name) || file.type === "text/plain") value=await file.text();
+    else throw new Error("Upload a PDF or TXT résumé.");
+    if(value.trim().length<80) throw new Error("We could not read enough résumé text. Paste it into the text box instead.");
+    field.value=value.slice(0,24000); field.dispatchEvent(new Event("input")); clearErr();
+  }catch(error){ field.value=""; steps[current-1].querySelector("[data-err]").textContent=error.message; showErr(); }
+});
 
 nextBtn.addEventListener("click", async ()=>{
   if(!validateStep()){ showErr(); return; }
   if(current < TOTAL){ current++; render(); window.scrollTo({top:document.getElementById("assessment").offsetTop-20,behavior:"smooth"}); return; }
   // final step → submit
   nextBtn.disabled=true; nextBtn.textContent="Submitting…";
-  const ok = await submit();
+  let ok=false;
+  try{ ok=await submit(); }catch(error){ steps[current-1].querySelector("[data-err]").textContent=error.message; showErr(); }
   nextBtn.disabled=false; nextBtn.textContent="Submit assessment";
   if(ok){
     try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
@@ -850,37 +837,25 @@ nextBtn.addEventListener("click", async ()=>{
    Fails silently (hides the box) if no backend is reachable, e.g. local file://. */
 function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 async function showAISnapshot(){
-  const box = document.getElementById("aiSnapshot");
-  if(!box || !AI_ENDPOINT) return;
-  box.style.display = "block";
-  box.innerHTML = '<div class="ai-load">Building your instant snapshot…</div>';
-  try{
-    const res = await fetch(AI_ENDPOINT, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify(collect())
-    });
-    if(!res.ok) throw new Error(await res.text());
-    const d = await res.json();
-    const roles = (d.target_roles||[]).map(r=>`<li>${esc(r)}</li>`).join("");
-    box.innerHTML =
-      '<div class="ai-head">Your instant snapshot</div>' +
-      (d.snapshot ? `<p class="ai-snaptext">${esc(d.snapshot)}</p>` : "") +
-      (roles ? `<div class="ai-sub">Target roles to aim for</div><ul class="ai-roles">${roles}</ul>` : "") +
-      (d.next_step ? `<div class="ai-sub">Your first move</div><p class="ai-pitch">${esc(d.next_step)}</p>` : "") +
-      '<div class="ai-foot">A starting point generated from your answers - your full plan comes by email.</div>';
-  }catch(e){
-    console.error("AI snapshot failed:", e);
-    box.style.display = "none";
-  }
+  const box=document.getElementById("aiSnapshot");
+  const d=submittedSnapshot;
+  if(!box || !d?.snapshot) return;
+  box.style.display="block";
+  const roles=(d.target_roles||[]).map(r=>`<li>${esc(r)}</li>`).join("");
+  box.innerHTML='<div class="ai-head">Your instant snapshot</div>'+
+    `<p class="ai-snaptext">${esc(d.snapshot)}</p>`+
+    (roles?`<div class="ai-sub">Target roles to aim for</div><ul class="ai-roles">${roles}</ul>`:"")+
+    (d.next_step?`<div class="ai-sub">Your first move</div><p class="ai-pitch">${esc(d.next_step)}</p>`:"")+
+    '<div class="ai-foot">A starting point generated from your answers - your full plan comes by email.</div>';
 }
+
 backBtn.addEventListener("click", ()=>{ if(current>1){current--; render();} });
 
 /* =========================================================
    AUTOSAVE - keep answers across an accidental refresh
    ========================================================= */
 const SAVE_KEY = "career_architect_assessment";
-function saveProgress(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(collect())); }catch(e){} }
+function saveProgress(){ try{ const data=collect(); delete data.resume; localStorage.setItem(SAVE_KEY, JSON.stringify(data)); }catch(e){} }
 function restoreProgress(){
   let data; try{ data = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); }catch(e){ data = null; }
   if(!data) return;

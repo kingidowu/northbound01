@@ -46,9 +46,23 @@ export default async function handler(req, res) {
   const rl = await rateLimit(req, { limit: 8, windowMs: 60_000 });
   if (!rl.ok) { res.setHeader("Retry-After", rl.retryAfter); res.status(429).json({ error: "Too many requests. Please wait a minute." }); return; }
 
+  let savedId = null;
   try {
     const a = req.body && typeof req.body === "object" ? req.body : {};
 
+    const resume = String(a.resume || "").trim();
+    if (resume.length < 80 || resume.length > 24000 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(a.email||"")) || !String(a.full_name||"").trim()) {
+      res.status(400).json({ error: "A full résumé, name, and valid email are required." }); return;
+    }
+    const sb = getServiceClient();
+    if (!sb) { res.status(503).json({ error: "Submission service unavailable. Please try again." }); return; }
+    const { data: saved, error: saveError } = await sb.from("assessments").insert({
+      full_name: String(a.full_name).slice(0,200), email: String(a.email).slice(0,320),
+      field: String(a.field||"").slice(0,200), data: a,
+    }).select("id").single();
+    if (saveError || !saved) { console.error("Assessment save failed", saveError); res.status(503).json({ error: "Could not save your assessment. Please try again." }); return; }
+
+    savedId = saved.id;
     // Build a compact profile from the assessment answers (general career —
     // tolerant of whichever fields the form sends).
     const profile = [
@@ -79,7 +93,6 @@ export default async function handler(req, res) {
       .join("\n");
 
     // Knowledge library: accumulated context in, submission stored after.
-    const sb = getServiceClient();
     const learned = await retrieveContext(sb);
 
     const message = await client.messages.create({
@@ -100,17 +113,9 @@ export default async function handler(req, res) {
 
     const text = message.content.find((b) => b.type === "text")?.text || "{}";
     res.status(200).json(JSON.parse(text));
-
-    // Persist the submission (for the admin) + ingest into the library — best-effort.
-    if (sb) {
-      sb.from("assessments").insert({
-        full_name: a.full_name || null, email: a.email || null,
-        field: a.field || null, data: a,
-      }).then(() => {}, () => {});
-    }
-    ingest(sb, "assessment", a.full_name || "Assessment", profile).catch(() => {});
   } catch (e) {
     console.error("AI snapshot failed:", e);
-    res.status(502).json({ error: "AI snapshot unavailable" });
+    if (savedId) res.status(200).json({ snapshot: "Your assessment was received. We will review your résumé and send your personalized materials by email.", target_roles: [], next_step: "Watch your email for your report and interview preparation." });
+    else res.status(502).json({ error: "AI snapshot unavailable" });
   }
 }
