@@ -1,9 +1,10 @@
 import { getServiceClient, ingest } from "../lib/knowledge.js";
+import { analyzeResume } from "../lib/ats-analysis.js";
 import { rateLimit } from "../lib/ratelimit.js";
 
 // Admin-only: paste a resume straight into the knowledge library to strengthen
 // the AI. Verifies the caller's Supabase session belongs to an admin, then
-// extracts + stores structured knowledge (cheap Haiku extraction, no full ATS run).
+// scans ATS readiness, extracts career knowledge, and stores both results.
 export default async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).json({ error: "Method not allowed" }); return; }
   const rl = await rateLimit(req, { limit: 40, windowMs: 60_000 });
@@ -47,7 +48,9 @@ export default async function handler(req, res) {
     const { data: adminRow } = await sb.from("admins").select("id").eq("id", u.user.id).maybeSingle();
     if (!adminRow) { res.status(403).json({ error: "Admins only." }); return; }
 
-    const extraction = await ingest(sb, "resume", label, input);
+    const analysis = await analyzeResume(input);
+    analysis.score_basis = "General ATS readiness";
+    const extraction = await ingest(sb, "resume", label, input, { atsAnalysis: analysis });
     if (!extraction) { res.status(502).json({ error: "Extraction failed." }); return; }
     res.status(200).json({ ok: true, extraction });
   } catch (e) {

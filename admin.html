@@ -28,6 +28,28 @@
   .ext h4:first-child{margin-top:0}
   .ext .chips span{display:inline-block;background:var(--white);border:1px solid var(--line);border-radius:7px;padding:.2rem .5rem;font-size:.8rem;margin:.15rem .2rem .15rem 0;font-family:"Space Mono"}
   .ext p{font-size:.92rem;color:var(--ink)}
+  .knowledge-entry{border:1px solid var(--line);border-radius:12px;background:var(--white);overflow:hidden}
+  .knowledge-entry summary{list-style:none;cursor:pointer;padding:1rem 1.1rem;display:flex;justify-content:space-between;gap:1rem;align-items:flex-start}
+  .knowledge-entry summary::-webkit-details-marker{display:none}
+  .knowledge-entry summary:hover{background:rgba(22,137,91,.04)}
+  .knowledge-entry .entry-title{font-family:"Space Grotesk";font-weight:700;display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+  .knowledge-entry .entry-summary{color:var(--slate);font-size:.86rem;margin-top:.35rem;line-height:1.5}
+  .knowledge-entry .entry-meta{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;justify-content:flex-end;color:var(--slate);font-size:.78rem;white-space:nowrap}
+  .knowledge-score{background:rgba(22,137,91,.1);color:var(--emerald);border-radius:7px;padding:.3rem .5rem}
+  .knowledge-body{border-top:1px solid var(--line);padding:1rem 1.1rem 1.2rem}
+  .knowledge-body h3{font-size:.84rem;margin:1rem 0 .4rem}
+  .knowledge-body h3:first-child{margin-top:0}
+  .knowledge-body p{color:var(--slate);font-size:.9rem;line-height:1.55}
+  .knowledge-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 1.4rem}
+  .knowledge-body ul{margin:.3rem 0;padding-left:1.1rem;color:var(--slate);font-size:.88rem}
+  .knowledge-body li{margin:.35rem 0}
+  .knowledge-body .chips span{display:inline-block;border:1px solid var(--line);border-radius:7px;padding:.25rem .5rem;margin:.15rem .3rem .15rem 0;font-size:.82rem;color:var(--slate)}
+  .role-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;list-style:none;padding:0!important}
+  .role-list li{border:1px solid var(--line);border-radius:9px;padding:.75rem;margin:0}
+  .role-list b{color:var(--ink)}
+  .role-list p{margin:.3rem 0}
+  .role-list small{color:var(--emerald)}
+  @media(max-width:700px){.knowledge-columns,.role-list{grid-template-columns:1fr}.knowledge-entry summary{flex-direction:column}.knowledge-entry .entry-meta{justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -134,7 +156,7 @@
 
       <div class="card">
         <h2>AI knowledge library <span class="badge badge-soft" id="kCount"></span></h2>
-        <p class="card-sub">Structured knowledge the AI has learned from resumes &amp; assessments. The more entries, the smarter the resume check and snapshots get.</p>
+        <p class="card-sub">Open an entry to review its ATS score, strengths, gaps, and recommended job types. Older entries show their extracted roles until they are scanned again.</p>
         <div class="grid" id="knowledge"><p class="muted">Loading…</p></div>
       </div>
     </section>
@@ -279,18 +301,38 @@ async function loadAssessments(){
 }
 
 async function loadKnowledge(){
-  const { data, error } = await sb.from("knowledge_library").select("source_type, summary, extraction, created_at").order("created_at",{ascending:false}).limit(100);
+  const { data, error } = await sb.from("knowledge_library").select("title, source_type, summary, extraction, created_at").order("created_at",{ascending:false}).limit(100);
   const box=$("knowledge");
   if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
   $("kCount").textContent = (data?.length || 0) + " entries";
   if(!data || !data.length){ box.innerHTML='<p class="muted">Empty - it fills as resumes and assessments come in.</p>'; return; }
   box.innerHTML = data.map(k=>{
     const e = k.extraction || {};
-    return `<div class="row">
-      <div><div class="t">${esc(e.field||k.source_type)} <span class="badge badge-soft">${esc(k.source_type)}</span></div>
-      <div class="s">${esc((k.summary||"").slice(0,120))}</div></div>
-      <div class="s">${esc((k.created_at||"").slice(0,10))}</div>
-    </div>`;
+    const ats = e.ats || null;
+    const score = Number.isFinite(ats?.ats_score) ? Math.max(0,Math.min(100,Math.round(ats.ats_score))) : null;
+    const roles = Array.isArray(ats?.job_recommendations) ? ats.job_recommendations : [];
+    const apply = roles.filter(r=>r.fit==="apply_now");
+    const develop = roles.filter(r=>r.fit==="build_toward");
+    return `<details class="knowledge-entry">
+      <summary>
+        <div><div class="entry-title">${esc(e.field||k.title||k.source_type)} <span class="badge badge-soft">${esc(k.source_type)}</span></div>
+        <div class="entry-summary">${esc(k.summary||"No summary available.")}</div></div>
+        <div class="entry-meta"><span>${esc((k.created_at||"").slice(0,10))}</span>${score===null?'<span class="badge badge-soft">ATS not scanned</span>':`<strong class="knowledge-score" title="${esc(ats.score_basis||"ATS estimate")}">ATS ${score}/100</strong>`}</div>
+      </summary>
+      <div class="knowledge-body">
+        ${e.seniority?`<p><b>Experience level:</b> ${esc(e.seniority)}</p>`:""}
+        ${ats?.verdict?`<h3>ATS assessment · ${esc(ats.score_basis||"ATS estimate")}</h3><p>${esc(ats.verdict)}</p>`:""}
+        ${score===null?'<p>ATS score unavailable for this older entry. Scan the original résumé again to add a measured score and job fit.</p>':""}
+        ${apply.length?`<h3>Jobs to apply for now</h3>${roleCards(apply)}`:""}
+        ${develop.length?`<h3>Roles to build toward</h3>${roleCards(develop)}`:""}
+        ${!roles.length?`<h3>Potential job types</h3><div class="chips">${chips(e.target_roles)}</div>`:""}
+        <div class="knowledge-columns">
+          <div>${detailList("Skills shown",e.skills)}${detailList("ATS strengths",ats?.strengths)}${detailList("Keywords to highlight",e.keywords)}</div>
+          <div>${detailList("Experience gaps",e.common_gaps)}${detailList("ATS gaps",ats?.gaps)}${detailList("Formatting flags",ats?.formatting_flags)}</div>
+        </div>
+        ${detailList("Recommended résumé changes",ats?.rewrite_tips)}
+      </div>
+    </details>`;
   }).join("");
 }
 
@@ -323,12 +365,19 @@ $("ingestFile").addEventListener("change", async (e)=>{
   }catch(err){ console.error(err); $("ingestDrop").textContent = "Couldn't read that file — paste the text instead"; }
 });
 
-function chips(arr){ return (arr||[]).map(x=>`<span>${esc(x)}</span>`).join("") || '<span style="opacity:.5">—</span>'; }
+function chips(arr){ return (Array.isArray(arr)?arr:[]).map(x=>`<span>${esc(x)}</span>`).join("") || '<span style="opacity:.5">Not available</span>'; }
+function detailList(title,arr){ return Array.isArray(arr)&&arr.length?`<h3>${esc(title)}</h3><ul>${arr.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""; }
+function roleCards(arr){ return `<ul class="role-list">${arr.map(r=>`<li><b>${esc(r.title)}</b><p>${esc(r.reason)}</p><small>${esc(r.next_step)}</small></li>`).join("")}</ul>`; }
 function renderExtraction(e){
+  const ats=e.ats||{};
+  const roles=Array.isArray(ats.job_recommendations)?ats.job_recommendations:[];
   $("ingestResult").innerHTML = `<div class="ext">
     <h4>What the AI extracted</h4>
     <p><b>${esc(e.field||"?")}</b> · ${esc(e.seniority||"?")}</p>
     ${e.summary?`<p style="color:var(--slate);margin-top:.4rem">${esc(e.summary)}</p>`:""}
+    ${Number.isFinite(ats.ats_score)?`<h4>ATS scanner score</h4><p><b>${Math.max(0,Math.min(100,Math.round(ats.ats_score)))}/100</b> · ${esc(ats.verdict||"")}</p>`:""}
+    ${roles.some(r=>r.fit==="apply_now")?`<h4>Jobs to apply for now</h4>${roleCards(roles.filter(r=>r.fit==="apply_now"))}`:""}
+    ${roles.some(r=>r.fit==="build_toward")?`<h4>Roles to build toward</h4>${roleCards(roles.filter(r=>r.fit==="build_toward"))}`:""}
     <h4>Skills</h4><div class="chips">${chips(e.skills)}</div>
     <h4>Target roles</h4><div class="chips">${chips(e.target_roles)}</div>
     <h4>Common gaps</h4><div class="chips">${chips(e.common_gaps)}</div>

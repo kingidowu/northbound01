@@ -29,6 +29,12 @@
   .res-block li{margin:.3rem 0}
   .kw{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.3rem}
   .kw span{background:rgba(22,137,91,.1);color:var(--emerald);border:1px solid rgba(22,137,91,.25);border-radius:7px;padding:.2rem .5rem;font-size:.8rem;font-family:"Space Mono"}
+  .job-types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem;list-style:none;padding:0;margin:.6rem 0 0}
+  .job-types li{border:1px solid var(--line);border-radius:10px;padding:.85rem}
+  .job-types li b{display:block;margin-bottom:.35rem}
+  .job-types li p{color:var(--slate);font-size:.88rem;margin:0 0 .35rem}
+  .job-types li small{color:var(--emerald)}
+  @media(max-width:680px){.job-types{grid-template-columns:1fr}}
   .spin{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--emerald);border-radius:50%;display:inline-block;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:.5rem}
   @keyframes spin{to{transform:rotate(360deg)}}
 </style>
@@ -90,6 +96,12 @@
           <div class="res-block"><h3>Formatting flags</h3><ul id="formatting"></ul></div>
         </div>
         <div class="res-block" style="margin-top:1.4rem"><h3>Rewrite suggestions</h3><ul id="tips"></ul></div>
+        <div class="res-block" id="jobAdvice" style="margin-top:1.5rem" hidden>
+          <h3>Job types that match your résumé</h3>
+          <p class="muted" style="font-size:.88rem">These are role types to search for, based on the experience shown in your résumé.</p>
+          <h4 id="applyNowHeading" style="margin:.9rem 0 .2rem">Apply for now</h4><ul class="job-types" id="applyNow"></ul>
+          <h4 id="buildTowardHeading" style="margin:1.1rem 0 .2rem">Build toward</h4><ul class="job-types" id="buildToward"></ul>
+        </div>
         <hr style="border:none;border-top:1px solid var(--line);margin:1.5rem 0">
         <button class="btn btn-ink" id="rewriteBtn" type="button">✨ Rewrite my resume with AI</button>
         <div id="rewriteOut" class="hidden" style="margin-top:1.3rem">
@@ -150,6 +162,7 @@ $("file").addEventListener("change", async (e)=>{
 
 function gaugeColor(v){ return v>=75 ? "#16895B" : v>=50 ? "#D99A28" : "#B23A3A"; }
 function list(el, arr){ $(el).innerHTML = (arr||[]).map(x=>`<li>${esc(x)}</li>`).join("") || '<li class="muted">-</li>'; }
+function jobCards(arr){ return arr.map(r=>`<li><b>${esc(r.title)}</b><p>${esc(r.reason)}</p><small>${esc(r.next_step)}</small></li>`).join(""); }
 
 $("analyze").addEventListener("click", async ()=>{
   clearMsg();
@@ -176,6 +189,16 @@ $("analyze").addEventListener("click", async ()=>{
     list("formatting", d.formatting_flags);
     list("tips", d.rewrite_tips);
     $("keywords").innerHTML = (d.keywords_to_add||[]).map(k=>`<span>${esc(k)}</span>`).join("") || '<span class="muted" style="background:none;border:none;color:var(--slate)">None flagged</span>';
+    const roles = Array.isArray(d.job_recommendations) ? d.job_recommendations : [];
+    const applyNow = roles.filter(r=>r.fit==="apply_now");
+    const buildToward = roles.filter(r=>r.fit==="build_toward");
+    $("jobAdvice").hidden = !roles.length;
+    $("applyNowHeading").hidden = !applyNow.length;
+    $("applyNow").hidden = !applyNow.length;
+    $("applyNow").innerHTML = jobCards(applyNow);
+    $("buildTowardHeading").hidden = !buildToward.length;
+    $("buildToward").hidden = !buildToward.length;
+    $("buildToward").innerHTML = jobCards(buildToward);
     $("result").style.display = "block";
     $("result").scrollIntoView({ behavior:"smooth", block:"start" });
   }catch(e){
