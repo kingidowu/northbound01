@@ -99,6 +99,7 @@
           <li>Everything in Free</li>
           <li>Unlimited resume ATS checks</li>
           <li>Detailed ATS and career report PDF by email</li>
+          <li>Private report library in your account</li>
           <li>Interview guide and follow-up email templates PDF</li>
           <li>AI résumé rewriter</li>
           <li>Unlimited résumé tailoring + save</li>
@@ -170,7 +171,8 @@
     const orig = btn.textContent; btn.textContent = "Loading…"; btn.style.pointerEvents = "none";
     try{
       const u = window.__caUser || {};
-      const res = await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan, user_id:u.id||"", email:u.email||""})});
+      if((plan.startsWith("pro_")||plan.startsWith("coaching_"))&&!u.token){location.href="seeker.html";return;}
+      const res = await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json",...(u.token?{Authorization:"Bearer "+u.token}:{})},body:JSON.stringify({plan,email:u.email||""})});
       const d = await res.json();
       if(res.status===503){ alert("Online billing isn't switched on yet. Create your free account and we'll get you set up."); location.href="seeker.html"; return; }
       if(!res.ok) throw new Error(d.error||"Checkout error");
@@ -197,7 +199,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data:{ session } } = await sb.auth.getSession();
     if (session?.user) {
-      window.__caUser = { id: session.user.id, email: session.user.email };
+      window.__caUser = { id: session.user.id, email: session.user.email, token: session.access_token };
       try {
         const { data: m } = await sb.from("memberships").select("plan,status").eq("user_id", session.user.id).maybeSingle();
         if (m && m.status === "active" && (m.plan === "pro" || m.plan === "coaching")) {

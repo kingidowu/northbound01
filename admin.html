@@ -140,7 +140,7 @@
 
       <div class="card">
         <h2>Assessments</h2>
-        <p class="card-sub">New intakes are emailed three PDFs automatically. Review delivery status, download PDFs, or resend when needed.</p>
+        <p class="card-sub">Paid intakes are emailed three PDFs automatically. Review delivery status, download PDFs, or resend when needed.</p>
         <div class="grid" id="assessments"><p class="muted">Loading…</p></div>
       </div>
 
@@ -296,7 +296,7 @@ async function loadAssessments(){
   box.innerHTML = data.map(a=>{
     const ready=!!a.data?.package, sent=!!a.data?.delivery?.sent_at, hasResume=String(a.data?.resume||"").length>=80;
     const status=a.data?.delivery_status||"legacy",busy=["processing","sending"].includes(status);
-    const label=sent?"Sent":status==="pending"?"Queued":busy?"Preparing email":status==="retry"?"Retry scheduled":status==="failed"?"Delivery failed":ready?"Ready to review":hasResume?"New intake":"No résumé";
+    const label=sent?"Sent":status==="not_included"?"Free snapshot":status==="pending"?"Queued":busy?"Preparing email":status==="retry"?"Retry scheduled":status==="failed"?"Delivery failed":ready?"Ready to review":hasResume?"New intake":"No résumé";
     return `<div class="row" style="display:block">
       <div style="display:flex;justify-content:space-between;gap:1rem"><div><div class="t">${esc(a.full_name||"-")} <span class="badge badge-soft">${label}</span></div><div class="s">${esc(a.field||"")}${a.email?" · "+esc(a.email):""} · ${esc((a.created_at||"").slice(0,10))}</div></div></div>
       <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.7rem">

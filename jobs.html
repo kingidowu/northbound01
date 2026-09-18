@@ -189,6 +189,7 @@
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+import { sponsorshipEvidence } from "./lib/visa-sponsorship.js";
 
 const results = document.getElementById("results");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -216,7 +217,8 @@ function card(j){
     : '<span class="badge badge-soft">Recruiter-posted</span>';
   const meta = [j.work_mode, j.employment_type, j.category, j.experience].filter(Boolean)
     .map(m=>`<span class="chip">${esc(m)}</span>`).join("");
-  const visa = j.visa_sponsorship ? '<strong class="visa-flag" title="Recruiter marked this role as offering sponsorship">VISA SPONSORSHIP OFFERED</strong>' : "";
+  const evidence=j.visa_sponsorship?sponsorshipEvidence(j.description):null;
+  const visa = j.visa_sponsorship ? '<strong class="visa-flag" title="Recruiter-reported sponsorship for this role">VISA SPONSORSHIP OFFERED</strong>' : "";
   const apply = `<button class="btn btn-accent" data-apply="${esc(j.id)}">Apply</button>`;
   const m = matchMap ? matchMap[j.id] : null;
   const matchBadge = m ? `<span class="match-badge" style="background:${m.score>=70?'#16895B':m.score>=45?'#D99A28':'#5A6280'}">${m.score}% match</span>` : "";
@@ -230,11 +232,14 @@ function card(j){
       <div style="text-align:right">${matchBadge}<div>${verified}</div></div>
     </div>
     <div class="job-meta">${meta}${visa}</div>
+    ${j.visa_sponsorship?`<div class="visa-evidence">${evidence?`Listing says: “${esc(evidence)}”`:"Recruiter-reported sponsorship; confirm visa type and eligibility before applying."}</div>`:""}
     ${reason}
     <p class="job-desc">${esc((j.description||"").slice(0,260))}${(j.description||"").length>260?"…":""}</p>
     <div class="job-foot"><span class="sal">${esc(salary(j))}</span>
       <div style="display:flex;gap:.8rem;align-items:center">
         <button class="link-btn" data-tailor="${esc(j.id)}" style="text-decoration:none;color:var(--emerald)">✨ Tailor résumé</button>
+        <button class="link-btn" data-ats="${esc(j.id)}">Check ATS fit</button>
+        <button class="link-btn" data-track-job="${esc(j.id)}">Track follow-up</button>
         <button class="link-btn" data-save="${esc(j.id)}" style="text-decoration:none;color:${savedSet.has(String(j.id))?'var(--emerald)':'var(--slate)'}">${savedSet.has(String(j.id))?'♥ Saved':'♡ Save'}</button>
         ${apply}
       </div>
@@ -426,7 +431,7 @@ if(sb) sb.auth.onAuthStateChange(()=>refreshUser());
 /* ---- live jobs from the web (Adzuna) ---- */
 function webCard(j){
   const visa = j.visa_sponsorship ? `<strong class="visa-flag" title="This listing explicitly offers visa sponsorship">VISA SPONSORSHIP OFFERED</strong>` : "";
-  const evidence = j.visa_sponsorship && j.sponsorship_evidence ? `<div class="visa-evidence">Listing says: ${esc(j.sponsorship_evidence)}</div>` : "";
+  const evidence = j.visa_sponsorship && j.sponsorship_evidence ? `<div class="visa-evidence">Listing says: “${esc(j.sponsorship_evidence)}”${safeUrl(j.apply_url)?` · <a href="${esc(safeUrl(j.apply_url))}" target="_blank" rel="noopener nofollow">Verify on source</a>`:""}</div>` : "";
   const meta = [j.work_mode, j.employment_type, j.category].filter(Boolean).map(m=>`<span class="chip">${esc(m)}</span>`).join("");
   return `<article class="card job">
     <div class="job-top">
@@ -438,6 +443,8 @@ function webCard(j){
     <div class="job-foot"><span class="sal">${esc(salary(j))}</span>
       <div style="display:flex;gap:.8rem;align-items:center">
         <button class="link-btn" data-tailor="${esc(j.id)}" style="text-decoration:none;color:var(--emerald)">✨ Tailor résumé</button>
+        <button class="link-btn" data-ats="${esc(j.id)}">Check ATS fit</button>
+        <button class="link-btn" data-track-job="${esc(j.id)}">Track follow-up</button>
         ${safeUrl(j.apply_url)?`<a class="btn btn-accent" href="${esc(safeUrl(j.apply_url))}" target="_blank" rel="noopener nofollow">Apply on source</a>`:""}
       </div>
     </div>
@@ -526,6 +533,10 @@ async function openTailor(j){
 $("tlClose").onclick = ()=> $("tailorModal").classList.remove("open");
 $("tailorModal").addEventListener("click", e=>{ if(e.target.id==="tailorModal") $("tailorModal").classList.remove("open"); });
 [results, $("webResults")].forEach(c=>c.addEventListener("click", e=>{
+  const track=e.target.closest("[data-track-job]");
+  if(track){const job=jobById(track.dataset.trackJob);if(job){sessionStorage.setItem("ca_track_job",JSON.stringify({title:job.title,company:job.company}));location.href="seeker.html#followups";}return;}
+  const ats=e.target.closest("[data-ats]");
+  if(ats){const job=jobById(ats.dataset.ats);if(job){sessionStorage.setItem("ca_ats_target_job",JSON.stringify({description:`${job.title} at ${job.company}\n${job.description||""}`.slice(0,12000)}));location.href="ats.html";}return;}
   const t = e.target.closest("[data-tailor]"); if(t) openTailor(jobById(t.dataset.tailor));
 }));
 

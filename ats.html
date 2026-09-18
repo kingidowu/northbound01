@@ -95,6 +95,10 @@
           <div class="res-block"><h3>Keywords to add</h3><div class="kw" id="keywords"></div></div>
           <div class="res-block"><h3>Formatting flags</h3><ul id="formatting"></ul></div>
         </div>
+        <div class="res-cols" id="jobBreakdown" hidden>
+          <div class="res-block"><h3>Requirements your résumé shows</h3><ul id="matchedRequirements"></ul></div>
+          <div class="res-block"><h3>Requirements to address</h3><ul id="missingRequirements"></ul></div>
+        </div>
         <div class="res-block" style="margin-top:1.4rem"><h3>Rewrite suggestions</h3><ul id="tips"></ul></div>
         <div class="res-block" id="jobAdvice" style="margin-top:1.5rem" hidden>
           <h3>Job types that match your résumé</h3>
@@ -163,6 +167,7 @@ $("file").addEventListener("change", async (e)=>{
 function gaugeColor(v){ return v>=75 ? "#16895B" : v>=50 ? "#D99A28" : "#B23A3A"; }
 function list(el, arr){ $(el).innerHTML = (arr||[]).map(x=>`<li>${esc(x)}</li>`).join("") || '<li class="muted">-</li>'; }
 function jobCards(arr){ return arr.map(r=>`<li><b>${esc(r.title)}</b><p>${esc(r.reason)}</p><small>${esc(r.next_step)}</small></li>`).join(""); }
+try{const job=JSON.parse(sessionStorage.getItem("ca_ats_target_job")||"null");if(job?.description){$("jd").value=job.description;sessionStorage.removeItem("ca_ats_target_job");}}catch{}
 
 $("analyze").addEventListener("click", async ()=>{
   clearMsg();
@@ -188,6 +193,12 @@ $("analyze").addEventListener("click", async ()=>{
     list("gaps", d.gaps);
     list("formatting", d.formatting_flags);
     list("tips", d.rewrite_tips);
+    const hasJob=!!$("jd").value.trim();
+    $("jobBreakdown").hidden=!hasJob;
+    if(hasJob){
+      $("matchedRequirements").innerHTML=(d.matched_requirements||[]).map(x=>`<li><b>${esc(x.requirement)}</b> — ${esc(x.resume_evidence)}</li>`).join("")||'<li class="muted">No clear matches identified.</li>';
+      $("missingRequirements").innerHTML=(d.missing_requirements||[]).map(x=>`<li><b>${esc(x.requirement)}</b> — ${esc(x.how_to_address)}</li>`).join("")||'<li class="muted">No specific gap identified.</li>';
+    }
     $("keywords").innerHTML = (d.keywords_to_add||[]).map(k=>`<span>${esc(k)}</span>`).join("") || '<span class="muted" style="background:none;border:none;color:var(--slate)">None flagged</span>';
     const roles = Array.isArray(d.job_recommendations) ? d.job_recommendations : [];
     const applyNow = roles.filter(r=>r.fit==="apply_now");

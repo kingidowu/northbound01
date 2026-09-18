@@ -46,8 +46,8 @@
   <div class="wrap">
     <div class="page-head">
       <span class="eyebrow">Your account</span>
-      <h1>Saved jobs &amp; applications.</h1>
-      <p>Bookmark roles and track every application in one place.</p>
+      <h1>Your career workspace.</h1>
+      <p>Keep your reports, saved jobs, applications, and follow-ups in one place.</p>
     </div>
 
     <div id="notConfigured" class="notice notice-warn hidden">
@@ -75,6 +75,29 @@
         <h2>Your plan <span class="badge badge-soft" id="planBadge">Checking…</span></h2>
         <p class="card-sub" id="planSub">Verifying your account access…</p>
         <a class="btn btn-accent hidden" href="pricing.html" id="planCta">See plans</a>
+        <button class="btn btn-ghost hidden" id="billingBtn" type="button">Manage subscription</button>
+        <p class="muted hidden" id="billingMsg"></p>
+      </div>
+      <div class="card">
+        <h2>My career reports</h2>
+        <p class="card-sub">Download your paid career report, tailored résumé, and interview guide again whenever you need them.</p>
+        <div class="grid" id="reports"><p class="muted">Loading…</p></div>
+      </div>
+      <div class="card">
+        <h2>Application follow-ups</h2>
+        <p class="card-sub">Track applications from any job board. Due dates are reminders for you; messages are never sent automatically.</p>
+        <p id="followSummary" class="muted"></p>
+        <div class="two">
+          <div class="field"><label for="followTitle">Job title</label><input id="followTitle" maxlength="120" placeholder="Data Analyst" /></div>
+          <div class="field"><label for="followCompany">Company</label><input id="followCompany" maxlength="120" placeholder="Company name" /></div>
+        </div>
+        <div class="two">
+          <div class="field"><label for="followEmail">Contact email (optional)</label><input id="followEmail" type="email" maxlength="200" placeholder="recruiter@example.com" /></div>
+          <div class="field"><label for="followStage">Current stage</label><select id="followStage"><option value="applied">Applied</option><option value="interviewed">Interviewed</option></select></div>
+        </div>
+        <button class="btn btn-accent" id="followAdd" type="button">Track this application</button>
+        <p class="muted hidden" id="followMsg"></p>
+        <div class="grid" id="followups" style="margin-top:1rem"></div>
       </div>
       <div class="card">
         <h2>Job alerts</h2>
@@ -182,11 +205,39 @@ async function loadApps(){
   const box=$("apps");
   if(error){ box.innerHTML=`<p class="muted">${esc(error.message)}</p>`; return; }
   if(!data || !data.length){ box.innerHTML='<p class="muted">No applications yet. Apply from the <a href="jobs.html">job board</a> while signed in to track them here.</p>'; return; }
-  box.innerHTML = data.map(a=>`
+  box.innerHTML = data.map((a,i)=>`
     <div class="row">
       <div><div class="t">${esc(a.jobs?.title||"Role")}</div><div class="s">${esc(a.jobs?.company||"")}</div></div>
-      <div style="text-align:right"><span class="badge ${a.status==='contacted'?'badge-verified':'badge-soft'}">${esc(a.status)}</span><div class="s">${esc((a.created_at||"").slice(0,10))}</div></div>
+      <div style="text-align:right"><span class="badge ${a.status==='contacted'?'badge-verified':'badge-soft'}">${esc(a.status)}</span><div class="s">${esc((a.created_at||"").slice(0,10))}</div><button class="link-btn" data-track-app="${i}">Track follow-up</button></div>
     </div>`).join("");
+  box.querySelectorAll("[data-track-app]").forEach(button=>button.onclick=()=>{
+    const a=data[Number(button.dataset.trackApp)];
+    $("followTitle").value=a.jobs?.title||"";$("followCompany").value=a.jobs?.company||"";
+    $("followStage").value=a.status==="contacted"?"interviewed":"applied";
+    $("followAdd").scrollIntoView({behavior:"smooth",block:"center"});
+  });
+}
+
+async function loadReports(){
+  const box=$("reports");
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session)return;
+  try{
+    const response=await fetch("/api/my-reports",{headers:{Authorization:"Bearer "+session.access_token}});
+    const data=await response.json();if(!response.ok)throw Error(data.error||"Could not load reports");
+    box.innerHTML=data.reports?.length?data.reports.map(r=>`<div class="row"><div><div class="t">${esc(r.field||"Career assessment")} ${r.ats_score!=null?`<span class="badge badge-soft">ATS ${Number(r.ats_score)}/100</span>`:""}</div><div class="s">${esc((r.created_at||"").slice(0,10))} · ${r.ready?"Ready":"Preparing"}</div></div><div style="display:flex;flex-wrap:wrap;gap:.5rem">${r.ready?["report","resume","prep"].map(kind=>`<button class="link-btn" data-report="${esc(r.id)}" data-kind="${kind}">${kind==="report"?"Report PDF":kind==="resume"?"Résumé PDF":"Interview prep PDF"}</button>`).join(""):""}</div></div>`).join(""):'<p class="muted">No paid reports yet. <a href="index.html#assessment">Submit an assessment</a> while signed in to your Pro or Coaching account.</p>';
+    box.querySelectorAll("[data-report]").forEach(button=>button.onclick=()=>downloadReport(button));
+  }catch(error){box.innerHTML=`<p class="muted">${esc(error.message)}</p>`;}
+}
+async function downloadReport(button){
+  const old=button.textContent;button.disabled=true;button.textContent="Preparing…";
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const response=await fetch(`/api/my-reports?id=${encodeURIComponent(button.dataset.report)}&kind=${encodeURIComponent(button.dataset.kind)}`,{headers:{Authorization:"Bearer "+session.access_token}});
+    if(!response.ok){const data=await response.json();throw Error(data.error||"Download failed");}
+    const url=URL.createObjectURL(await response.blob()),link=document.createElement("a");
+    link.href=url;link.download=button.dataset.kind==="report"?"career-report.pdf":button.dataset.kind==="resume"?"tailored-resume.pdf":"interview-prep.pdf";link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }catch(error){alert(error.message);}finally{button.disabled=false;button.textContent=old;}
 }
 
 async function loadTailored(){
@@ -221,6 +272,59 @@ async function loadAlerts(){
   box.querySelectorAll("[data-del-alert]").forEach(b=>b.onclick=async ()=>{ if(!confirm("Delete this alert?"))return; await sb.from("saved_searches").delete().eq("id",b.dataset.delAlert); loadAlerts(); });
 }
 
+function localDay(value){const day=new Date(value);return `${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,"0")}-${String(day.getDate()).padStart(2,"0")}`;}
+function businessDays(start,count){
+  const day=new Date(start||Date.now());day.setHours(12,0,0,0);
+  for(let n=0;n<count;){day.setDate(day.getDate()+1);if(day.getDay()!==0&&day.getDay()!==6)n++;}
+  return localDay(day);
+}
+function tracker(){return Array.isArray(user?.user_metadata?.ca_followups)?user.user_metadata.ca_followups:[];}
+async function saveTracker(items){
+  const {data,error}=await sb.auth.updateUser({data:{ca_followups:items.slice(0,40)}});
+  if(error)throw error;
+  user=data.user;renderTracker();
+}
+function template(item){
+  const title=item.title,company=item.company;
+  if(item.stage==="interviewed")return `Subject: Thank you for discussing ${title}\n\nHello [Interviewer],\n\nThank you for speaking with me about the ${title} role at ${company}. I appreciated learning more about [specific topic]. Our conversation reinforced my interest in the role. Please let me know if I can provide anything else.\n\nBest,\n[Your name]`;
+  if(item.stage==="thank_you_sent")return `Subject: Checking in on ${title}\n\nHello [Interviewer],\n\nI enjoyed our conversation about the ${title} role at ${company}. I wanted to check whether there is an update on next steps. I remain interested and am happy to provide anything helpful.\n\nBest,\n[Your name]`;
+  return `Subject: Following up on my ${title} application\n\nHello [Hiring team],\n\nI applied for the ${title} role at ${company} and wanted to confirm my interest. My experience with [relevant skill or result] aligns with [specific requirement]. Please let me know if I can share anything else.\n\nBest,\n[Your name]`;
+}
+function renderTracker(){
+  const box=$("followups"),items=tracker();
+  const today=localDay(Date.now());
+  const dueCount=items.filter(item=>item.stage!=="done"&&businessDays(item.updated_at,item.stage==="interviewed"?1:5)<=today).length;
+  $("followSummary").textContent=dueCount?`${dueCount} follow-up${dueCount===1?" is":"s are"} due now.`:"No follow-ups due today.";
+  if(!items.length){box.innerHTML='<p class="muted">Nothing tracked yet. Add a role above, including jobs you applied to on other sites.</p>';return;}
+  box.innerHTML=items.map(item=>{
+    const due=item.stage==="interviewed"?businessDays(item.updated_at,1):item.stage==="thank_you_sent"?businessDays(item.updated_at,5):businessDays(item.updated_at,5);
+    const done=item.stage==="done";
+    return `<div class="row" style="display:block"><div style="display:flex;justify-content:space-between;gap:.8rem"><div><div class="t">${esc(item.title)}</div><div class="s">${esc(item.company)}${item.email?" · "+esc(item.email):""} · ${esc(item.stage.replaceAll("_"," "))}</div></div><span class="badge ${!done&&due<=today?"badge-verified":"badge-soft"}">${done?"Complete":due<=today?"Follow-up due":"Check in "+due}</span></div>${done?"":`<details style="margin-top:.7rem"><summary>Email template to customize</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-family:inherit;font-size:.84rem">${esc(template(item))}</pre></details><div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.6rem"><button class="link-btn" data-follow="${esc(item.id)}" data-action="copy">Copy template</button><button class="link-btn" data-follow="${esc(item.id)}" data-action="sent">I sent it</button><button class="link-btn" data-follow="${esc(item.id)}" data-action="interview">Interviewed</button><button class="link-btn" data-follow="${esc(item.id)}" data-action="done">Close</button></div>`}<button class="link-btn" data-follow="${esc(item.id)}" data-action="delete">Remove</button></div>`;
+  }).join("");
+  box.querySelectorAll("[data-follow]").forEach(button=>button.onclick=async()=>{
+    const item=tracker().find(x=>x.id===button.dataset.follow);if(!item)return;
+    if(button.dataset.action==="copy"){try{await navigator.clipboard.writeText(template(item));$("followMsg").textContent="Template copied. Personalize the placeholders before sending.";$("followMsg").classList.remove("hidden");}catch{$("followMsg").textContent="Select and copy the template shown above.";$("followMsg").classList.remove("hidden");}return;}
+    const next=tracker().filter(x=>x.id!==item.id);
+    if(button.dataset.action!=="delete"){
+      const stage=button.dataset.action==="interview"?"interviewed":button.dataset.action==="done"?"done":item.stage==="interviewed"?"thank_you_sent":"done";
+      next.unshift({...item,stage,updated_at:new Date().toISOString()});
+    }
+    try{await saveTracker(next);}catch(error){$("followMsg").textContent=error.message;$("followMsg").classList.remove("hidden");}
+  });
+}
+$("followAdd").onclick=async()=>{
+  const title=$("followTitle").value.trim(),company=$("followCompany").value.trim(),email=$("followEmail").value.trim();
+  if(!title||!company||email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("followMsg").textContent="Enter a job title, company, and valid contact email if provided.";$("followMsg").classList.remove("hidden");return;}
+  const item={id:crypto.randomUUID(),title,company,email,stage:$("followStage").value,updated_at:new Date().toISOString()};
+  try{await saveTracker([item,...tracker()]);$("followTitle").value="";$("followCompany").value="";$("followEmail").value="";$("followMsg").classList.add("hidden");}
+  catch(error){$("followMsg").textContent=error.message;$("followMsg").classList.remove("hidden");}
+};
+$("billingBtn").onclick=async()=>{
+  const button=$("billingBtn");button.disabled=true;$("billingMsg").classList.add("hidden");
+  try{const {data:{session}}=await sb.auth.getSession();const response=await fetch("/api/billing-portal",{method:"POST",headers:{Authorization:"Bearer "+session.access_token}});const data=await response.json();if(!response.ok)throw Error(data.error||"Billing unavailable");location.href=data.url;}
+  catch(error){$("billingMsg").textContent=error.message;$("billingMsg").classList.remove("hidden");button.disabled=false;}
+};
+
 async function loadPlan(session){
   const accountId=session.user.id;
   try{
@@ -229,6 +333,7 @@ async function loadPlan(session){
     if(!response.ok) throw new Error(data.error||"Could not verify account access");
     if(user?.id!==accountId) return;
     const badge=$("planBadge"), sub=$("planSub"), cta=$("planCta"), adminNav=$("adminNav");
+    $("billingBtn").classList.toggle("hidden",!data.billing_available);
     cta.classList.remove("hidden");
     adminNav.classList.toggle("hidden",!data.admin);
     if(data.admin){
@@ -239,7 +344,7 @@ async function loadPlan(session){
       const name=data.plan==="pro"?"Pro":"Coaching";
       badge.textContent=name; badge.className="badge badge-verified";
       sub.textContent=`You're on the ${name} plan. Unlimited AI résumé tailoring and interview prep are unlocked.`;
-      cta.textContent="Manage plan"; cta.href="pricing.html";
+      cta.textContent="See plans"; cta.href="pricing.html";
     }else{
       badge.textContent="Free"; badge.className="badge badge-soft";
       sub.textContent="You're on the free plan. Upgrade to Pro for unlimited AI résumé tailoring and interview prep.";
@@ -250,6 +355,7 @@ async function loadPlan(session){
     $("planBadge").textContent="Unavailable";
     $("planSub").textContent="We couldn't verify your account access. Please refresh and try again.";
     $("planCta").classList.add("hidden");
+    $("billingBtn").classList.add("hidden");
     $("adminNav").classList.add("hidden");
   }
 }
@@ -259,7 +365,8 @@ async function onSession(session){
   if(user){
     $("authCard").classList.add("hidden"); $("dash").classList.remove("hidden");
     $("whoami").textContent = "Signed in as " + user.email;
-    loadSaved(); loadApps(); loadTailored(); loadPlan(session); loadAlerts();
+    loadSaved(); loadApps(); loadTailored(); loadPlan(session); loadAlerts(); loadReports(); renderTracker();
+    try{const job=JSON.parse(sessionStorage.getItem("ca_track_job")||"null");if(job?.title&&job?.company){$("followTitle").value=job.title;$("followCompany").value=job.company;sessionStorage.removeItem("ca_track_job");$("followAdd").scrollIntoView({behavior:"smooth",block:"center"});}}catch{}
   } else {
     $("dash").classList.add("hidden"); $("adminNav").classList.add("hidden");
     if(SUPABASE_URL && SUPABASE_ANON_KEY) $("authCard").classList.remove("hidden");

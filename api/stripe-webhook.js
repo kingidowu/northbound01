@@ -13,14 +13,16 @@ async function rawBody(req) {
 }
 
 // Verify Stripe's signature header without the Stripe SDK.
-function verify(raw, sigHeader, secret) {
-  const parts = Object.fromEntries((sigHeader || "").split(",").map((p) => p.split("=")));
-  if (!parts.t || !parts.v1) return false;
-  const expected = crypto.createHmac("sha256", secret).update(`${parts.t}.${raw.toString("utf8")}`).digest("hex");
-  try { return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.v1)); } catch { return false; }
+export function verify(raw, sigHeader, secret) {
+  const parts=(sigHeader||"").split(",").map(part=>part.trim().split("="));
+  const timestamp=parts.find(([key])=>key==="t")?.[1];
+  const signatures=parts.filter(([key])=>key==="v1").map(([,value])=>value);
+  if(!/^\d+$/.test(timestamp||"")||Math.abs(Date.now()/1000-Number(timestamp))>300||!signatures.length)return false;
+  const expected=crypto.createHmac("sha256",secret).update(`${timestamp}.${raw.toString("utf8")}`).digest("hex");
+  return signatures.some(signature=>/^[a-f0-9]{64}$/i.test(signature)&&crypto.timingSafeEqual(Buffer.from(expected,"hex"),Buffer.from(signature,"hex")));
 }
 
-async function sendReceipt(to, plan, amount, currency) {
+async function sendReceipt(to, plan, amount, currency, eventId) {
   if (!process.env.RESEND_API_KEY || !to) return;
   const html = `<div style="font-family:Inter,Arial,sans-serif;color:#0E1733;max-width:520px;margin:auto">
     <b style="font-family:'Space Grotesk'">The Career Architect</b>
@@ -30,7 +32,7 @@ async function sendReceipt(to, plan, amount, currency) {
   </div>`;
   await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json", "Idempotency-Key":`stripe-receipt-${eventId}` },
     body: JSON.stringify({ from: FROM, to, subject: "Your receipt — The Career Architect", html }),
   }).catch(() => {});
 }
@@ -39,9 +41,8 @@ export default async function handler(req, res) {
   if (req.method !== "POST") { res.status(405).end(); return; }
   const raw = await rawBody(req);
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (secret) {
-    if (!verify(raw, req.headers["stripe-signature"], secret)) { res.status(400).json({ error: "invalid signature" }); return; }
-  }
+  if (!secret) { res.status(503).json({ error: "webhook secret missing" }); return; }
+  if (!verify(raw, req.headers["stripe-signature"], secret)) { res.status(400).json({ error: "invalid signature" }); return; }
 
   let event;
   try { event = JSON.parse(raw.toString("utf8")); } catch { res.status(400).end(); return; }
@@ -59,24 +60,36 @@ export default async function handler(req, res) {
 
       const sb = getServiceClient();
       if (sb) {
-        await sb.from("purchases").upsert(
+        const {error:purchaseError}=await sb.from("purchases").upsert(
           { email, plan, amount, currency, stripe_session_id: s.id, status: s.payment_status || "paid" },
           { onConflict: "stripe_session_id" }
-        ).then(() => {}, (e) => console.error("purchase insert:", e));
+        );
+        if(purchaseError)throw purchaseError;
 
         // Unlock membership for subscription plans tied to a logged-in account.
         if (userId && tier) {
-          await sb.from("memberships").upsert(
+          const {error:membershipError}=await sb.from("memberships").upsert(
             { user_id: userId, email, plan: tier, status: "active", stripe_customer_id: s.customer || null, updated_at: new Date().toISOString() },
             { onConflict: "user_id" }
-          ).then(() => {}, (e) => console.error("membership upsert:", e));
+          );
+          if(membershipError)throw membershipError;
         }
       }
-      await sendReceipt(email, plan, amount, currency);
+      await sendReceipt(email, plan, amount, currency,event.id);
+    }
+    if(event.type==="customer.subscription.updated"||event.type==="customer.subscription.deleted"){
+      const subscription=event.data.object;
+      const sb=getServiceClient();
+      if(sb&&subscription.customer){
+        const status=event.type==="customer.subscription.deleted"?"canceled":subscription.status;
+        const period=subscription.current_period_end?new Date(subscription.current_period_end*1000).toISOString():null;
+        const {error}=await sb.from("memberships").update({status,current_period_end:period,updated_at:new Date().toISOString()}).eq("stripe_customer_id",subscription.customer);
+        if(error)throw error;
+      }
     }
     res.status(200).json({ received: true });
   } catch (e) {
     console.error("webhook handler error:", e);
-    res.status(200).json({ received: true }); // ack so Stripe doesn't retry-storm
+    res.status(500).json({ error: "Webhook processing failed" });
   }
 }

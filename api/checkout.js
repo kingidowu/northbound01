@@ -1,4 +1,5 @@
 import { rateLimit } from "../lib/ratelimit.js";
+import { getServiceClient } from "../lib/knowledge.js";
 
 // Creates a Stripe Checkout session (no Stripe SDK needed - raw REST).
 // Needs STRIPE_SECRET_KEY (server-side env var). Uses inline price_data so you
@@ -26,8 +27,21 @@ export default async function handler(req, res) {
     const b = req.body && typeof req.body === "object" ? req.body : {};
     const plan = PLANS[(b.plan || "").toString()];
     if (!plan) { res.status(400).json({ error: "Unknown plan" }); return; }
-    const email = (b.email || "").toString().slice(0, 200).trim();
-    const userId = (b.user_id || "").toString().slice(0, 100).trim();
+    let email = (b.email || "").toString().slice(0, 200).trim();
+    let userId = "";
+    let customerId = "";
+    if(["pro_monthly","pro_annual","coaching_monthly","coaching_annual"].includes(String(b.plan))){
+      const token=/^Bearer\s+(.+)$/i.exec(String(req.headers.authorization||""))?.[1];
+      const sb=getServiceClient();
+      if(!token||!sb){res.status(401).json({error:"Sign in before choosing a subscription."});return;}
+      const {data:auth,error:authError}=await sb.auth.getUser(token);
+      if(authError||!auth?.user){res.status(401).json({error:"Sign in again before choosing a subscription."});return;}
+      userId=auth.user.id;email=auth.user.email||"";
+      const {data:membership,error:membershipError}=await sb.from("memberships").select("status,stripe_customer_id").eq("user_id",userId).maybeSingle();
+      if(membershipError)throw membershipError;
+      if(membership?.status==="active"&&membership.stripe_customer_id){res.status(409).json({error:"You already have a subscription. Manage it from your account."});return;}
+      customerId=membership?.stripe_customer_id||"";
+    }
 
     const p = new URLSearchParams();
     p.set("mode", plan.mode);
@@ -39,7 +53,8 @@ export default async function handler(req, res) {
     p.append("line_items[0][price_data][product_data][name]", plan.name);
     p.append("line_items[0][price_data][unit_amount]", String(plan.amount));
     if (plan.mode === "subscription") p.append("line_items[0][price_data][recurring][interval]", plan.interval);
-    if (email) p.set("customer_email", email);
+    if (customerId) p.set("customer",customerId);
+    else if (email) p.set("customer_email", email);
     if (userId) p.set("client_reference_id", userId);
     p.set("metadata[plan]", b.plan);
     if (userId) p.set("metadata[user_id]", userId);
