@@ -3,6 +3,7 @@ import { waitUntil } from "@vercel/functions";
 import { processAssessment } from "../lib/assessment-delivery.js";
 import { getServiceClient, retrieveContext, ingest } from "../lib/knowledge.js";
 import { rateLimit } from "../lib/ratelimit.js";
+import { assessmentAccess } from "../lib/assessment-access.js";
 
 // The API key lives ONLY here, server-side, read from a Vercel environment
 // variable. It must never appear in index.html or any client-shipped code.
@@ -49,6 +50,7 @@ export default async function handler(req, res) {
   if (!rl.ok) { res.setHeader("Retry-After", rl.retryAfter); res.status(429).json({ error: "Too many requests. Please wait a minute." }); return; }
 
   let savedId = null;
+  let paidReport = false;
   try {
     const a = req.body && typeof req.body === "object" ? req.body : {};
 
@@ -58,14 +60,17 @@ export default async function handler(req, res) {
     }
     const sb = getServiceClient();
     if (!sb) { res.status(503).json({ error: "Submission service unavailable. Please try again." }); return; }
+    const access = await assessmentAccess(sb, req.headers.authorization, a.email);
+    if (access.error) { res.status(access.status).json({ error: access.error }); return; }
+    paidReport = access.paid;
     const { data: saved, error: saveError } = await sb.from("assessments").insert({
       full_name: String(a.full_name).slice(0,200), email: String(a.email).slice(0,320),
-      field: String(a.field||"").slice(0,200), data: { ...a, delivery_status: "pending", delivery_attempts: 0 },
+      field: String(a.field||"").slice(0,200), data: { ...a, user_id: access.userId, report_tier: paidReport ? "paid" : "free", delivery_status: paidReport ? "pending" : "not_included", delivery_attempts: 0 },
     }).select("id").single();
     if (saveError || !saved) { console.error("Assessment save failed", saveError); res.status(503).json({ error: "Could not save your assessment. Please try again." }); return; }
 
     savedId = saved.id;
-    waitUntil(processAssessment(saved.id, sb).catch((error) => console.error("Assessment background delivery failed", saved.id, error)));
+    if (paidReport) waitUntil(processAssessment(saved.id, sb).catch((error) => console.error("Assessment background delivery failed", saved.id, error)));
     // Build a compact profile from the assessment answers (general career —
     // tolerant of whichever fields the form sends).
     const profile = [
@@ -115,10 +120,10 @@ export default async function handler(req, res) {
     });
 
     const text = message.content.find((b) => b.type === "text")?.text || "{}";
-    res.status(200).json(JSON.parse(text));
+    res.status(200).json({ ...JSON.parse(text), paid_report: paidReport });
   } catch (e) {
     console.error("AI snapshot failed:", e);
-    if (savedId) res.status(200).json({ snapshot: "Your assessment was received. We will review your résumé and send your personalized materials by email.", target_roles: [], next_step: "Watch your email for your report and interview preparation." });
+    if (savedId) res.status(200).json({ snapshot: paidReport ? "Your assessment was received. Your detailed PDFs are being prepared." : "Your assessment was received. You can use your snapshot to plan your next steps.", target_roles: [], next_step: paidReport ? "Watch your account email for your report and interview preparation." : "Review your target roles and consider Pro for a detailed PDF package.", paid_report: paidReport });
     else res.status(502).json({ error: "AI snapshot unavailable" });
   }
 }

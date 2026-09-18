@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { sendMaterials } from "../lib/assessment-delivery.js";
+import { sendMaterials, processAssessment } from "../lib/assessment-delivery.js";
 
 const record={id:"12345678-1234-1234-1234-123456789012",full_name:"Sample Candidate",email:"sample@example.com",field:"Analytics",data:{
   resume:"Experienced data analyst with SQL, dashboards, and quality checks.",
@@ -29,4 +29,9 @@ test("candidate receives three PDF attachments and a private prep link",async()=
     if(oldKey===undefined)delete process.env.RESEND_API_KEY;else process.env.RESEND_API_KEY=oldKey;
     if(oldSecret===undefined)delete process.env.SUPABASE_SERVICE_ROLE_KEY;else process.env.SUPABASE_SERVICE_ROLE_KEY=oldSecret;
   }
+});
+
+test("automatic worker does not email a free assessment",async()=>{
+  const sb={from:()=>({select(){return this;},eq(){return this;},async maybeSingle(){return {data:{...record,data:{...record.data,report_tier:"free",delivery_status:"pending"}}};}})};
+  assert.deepEqual(await processAssessment(record.id,sb),{skipped:true,status:"not_included"});
 });
